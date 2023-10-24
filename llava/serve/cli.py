@@ -4,15 +4,20 @@ import torch
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init
+from llava.utils import disable_torch_init, postprocess_llava_output
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 
 from PIL import Image
+from tqdm import tqdm
 
 import requests
+import os
+import json
 from PIL import Image
 from io import BytesIO
 from transformers import TextStreamer
+
+from prompts import PROMPT_DICT
 
 
 def load_image(image_file):
@@ -51,61 +56,155 @@ def main(args):
     else:
         roles = conv.roles
 
-    image = load_image(args.image_file)
-    # Similar operation in model_worker.py
-    image_tensor = process_images([image], image_processor, args)
-    if type(image_tensor) is list:
-        image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
-    else:
-        image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-    while True:
-        try:
-            inp = input(f"{roles[0]}: ")
-        except EOFError:
-            inp = ""
-        if not inp:
-            print("exit...")
-            break
+    # TODO: Implement dataset loaded, singel-turn output case
+    if args.data_dir is not None:
+        pred_dict = {}
 
-        print(f"{roles[1]}: ", end="")
+        task_type = "high_coarse"
+        out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_type}_output.json"
+        user_prompt = PROMPT_DICT[task_type]
 
-        if image is not None:
-            # first message
-            if model.config.mm_use_im_start_end:
-                inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+        if os.path.exists(os.path.join(args.data_dir, args.data_path)):
+            with open(os.path.join(args.data_dir, args.data_path), "r") as fp:
+                dataset = json.load(fp)
+            fp.close()
+
+        for idx, data in enumerate(dataset['annotations']):
+            img_dict = dataset['images'][idx]
+            inp = user_prompt
+            # print(f"USER_PROMPT : {user_prompt}")
+            image = load_image(os.path.join(args.data_dir, img_dict['file_name']))
+            # Similar operation in model_worker.py
+            image_tensor = process_images([image], image_processor, args)
+            print(f"======idx: {idx} | image_tensor (shape) : {image_tensor.shape}======")
+            if type(image_tensor) is list:
+                image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
             else:
-                inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
-            conv.append_message(conv.roles[0], inp)
-            image = None
+                image_tensor = image_tensor.to(model.device, dtype=torch.float16)
+
+            if args.dialogue_mode == 'multi':
+                if image is not None:
+                    # first message
+                    if model.config.mm_use_im_start_end:
+                        inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+                    else:
+                        inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                    conv.append_message(conv.roles[0], inp)
+                    image = None
+                else:
+                    # later messages
+                    conv.append_message(conv.roles[0], inp)
+                conv.append_message(conv.roles[1], None)
+
+            elif args.dialogue_mode == 'single':  # Single-turn case
+                if idx == 0:
+                    if model.config.mm_use_im_start_end:
+                        inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+                    else:
+                        inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                    conv.append_message(conv.roles[0], inp)
+                    conv.append_message(conv.roles[1], None)
+                else:
+                    image = None
+            prompt = conv.get_prompt()
+
+            if (idx + 1) % 1 == 0:
+                print("\nconv.roles[0] : ", conv.roles[0])
+                print("conv.roles[1] : ", conv.roles[1])
+                print(f" >> conv.get_prompt() : {prompt}\n")
+
+            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+            keywords = [stop_str]
+            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+
+            print(f"======idx: {idx} | input_ids: {input_ids.shape}======")
+
+            with torch.inference_mode():
+                output_ids = model.generate(
+                    input_ids,
+                    images=image_tensor,
+                    do_sample=True,
+                    temperature=args.temperature,
+                    max_new_tokens=args.max_new_tokens,
+                    streamer=streamer,
+                    use_cache=True,
+                    stopping_criteria=[stopping_criteria])
+
+            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            pred_dict[idx] = outputs.strip()
+            # conv.messages[-1][-1] = outputs  # Append the answer to the input stream
+
+            if args.debug:
+                print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+
+        # Save the outputs
+        if not os.path.exists(out_path):
+            with open(out_path, "w") as outfp:
+                json.dump(pred_dict, outfp)
+                print(f"Saved `pred_dict` to {out_path}")
+                outfp.close()
+
+
+    else:  # Original, multi-turn dialogue setting
+
+        image = load_image(args.image_file)
+        # Similar operation in model_worker.py
+        image_tensor = process_images([image], image_processor, args)
+        if type(image_tensor) is list:
+            image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
         else:
-            # later messages
-            conv.append_message(conv.roles[0], inp)
-        conv.append_message(conv.roles[1], None)
-        prompt = conv.get_prompt()
+            image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-        input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
-        stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-        keywords = [stop_str]
-        stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-        streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+        while True:
+            try:
+                inp = input(f"{roles[0]}: ")
+            except EOFError:
+                inp = ""
+            if not inp:
+                print("exit...")
+                break
 
-        with torch.inference_mode():
-            output_ids = model.generate(
-                input_ids,
-                images=image_tensor,
-                do_sample=True,
-                temperature=args.temperature,
-                max_new_tokens=args.max_new_tokens,
-                streamer=streamer,
-                use_cache=True,
-                stopping_criteria=[stopping_criteria])
+            print(f"{roles[1]}: ", end="")
 
-        outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
-        conv.messages[-1][-1] = outputs
+            if image is not None:
+                # first message
+                if model.config.mm_use_im_start_end:
+                    inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
+                else:
+                    inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                conv.append_message(conv.roles[0], inp)
+                image = None
+            else:
+                # later messages
+                conv.append_message(conv.roles[0], inp)
+            conv.append_message(conv.roles[1], None)
+            prompt = conv.get_prompt()
 
-        if args.debug:
-            print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
+            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+            keywords = [stop_str]
+            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+
+            with torch.inference_mode():
+                output_ids = model.generate(
+                    input_ids,
+                    images=image_tensor,
+                    do_sample=True,
+                    temperature=args.temperature,
+                    max_new_tokens=args.max_new_tokens,
+                    streamer=streamer,
+                    use_cache=True,
+                    stopping_criteria=[stopping_criteria])
+
+            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            conv.messages[-1][-1] = outputs
+
+            if args.debug:
+                print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
 
 
 if __name__ == "__main__":
@@ -113,6 +212,9 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--image-file", type=str, required=True)
+    parser.add_argument("--data_dir", type=str, default=None)
+    parser.add_argument("--data_path", type=str, default=None)
+    parser.add_argument("--dialogue-mode", type=str, default=None)  # ['multi', 'single']
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
     parser.add_argument("--temperature", type=float, default=0.2)

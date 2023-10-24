@@ -1,0 +1,64 @@
+0 | Insects | insects 
+1 |  | insects 
+2 | Insects | insects 
+3 |  | insects 
+4 | Birds | birds 
+5 | Birds | insects 
+6 | " from one of the four categories: {black, brown, white, yellow}. | insects 
+7 | White | birds 
+8 | The organism in the image is a white plant with a small white flower on it. | mollusks 
+9 | Plants | birds 
+10 | Insects | insects 
+11 |  | insects 
+12 | Insects | insects 
+13 |  | birds 
+14 | Insects | insects 
+15 |  | insects 
+16 | Birds | birds 
+17 | Butterfly | insects 
+18 | The image features a butterfly floating in a body of water. The butterfly is surrounded by a dark background, which creates a striking contrast against the butterfly's delicate wings. The scene captures the beauty and grace of this delicate creature as it glides through the water. | mollusks 
+19 | Butterfly | birds 
+20 | The image does not show a butterfly. It shows a bald eagle perched on a tree branch. | birds 
+21 | Insects | insects 
+22 | The image shows a black bear in a tree. | mammals 
+23 | Insects | insects 
+24 | The image features a bird perched on a tree branch. | birds 
+25 | Bird | birds 
+26 | The bird is sitting on a rock. | reptiles 
+27 | Bird | birds 
+28 | The image shows a group of birds walking across a lush green field. | mammals 
+29 | Birds | birds 
+30 | Insects | insects 
+31 |  | insects 
+32 | Insects | insects 
+33 |  | insects 
+34 | Insects | mollusks 
+35 |  | amphibians 
+36 | Insects | insects 
+37 | Snake | reptiles 
+38 | This is a joke. | insects 
+39 | Insects | insects 
+40 | The image features a white butterfly with yellow spots perched on a leaf. | insects 
+41 | Insects | insects 
+42 | The image shows a group of giraffes standing in a field. | mammals 
+43 | Mammals | birds 
+44 | The organism in the image is a human hand holding a shell. | mollusks 
+45 | Insects | ray-finned fishes 
+46 | The image features a blue butterfly perched on a green stem. | insects 
+47 | Insects | insects 
+48 | The image shows a grassy field with a brown bird standing on the grass. The bird is looking down at the ground, possibly searching for food. The presence of the bird in the image suggests that it is a natural habitat for the bird, and it is likely to be feeding on insects or other small organisms found in the grass. | birds 
+49 | Bird | ray-finned fishes 
+50 | The image features a butterfly perched on a yellow flower. | insects 
+51 | Insects | birds 
+52 | The insect in the image is a bird with a long beak, which is walking through the grass. | birds 
+53 | Insects | insects 
+54 | The black bird is perched on the edge of a building. | birds 
+55 | Birds | mammals 
+56 | " from one of the four categories: {white, black, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple | birds 
+57 | insect | insects 
+58 | " from one of the four categories: {black, brown, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, | insects 
+59 | Birds | birds 
+60 | " from one of the four categories: {black, brown, white, green, red, yellow, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, | birds 
+61 | Gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, pur | insects 
+62 | Bird | birds 
+63 | The image features a small bird perched on a cement surface. | insects 
