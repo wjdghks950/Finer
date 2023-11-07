@@ -106,6 +106,10 @@ class Conversation:
     def append_message(self, role, message):
         self.messages.append([role, message])
 
+    def clear_message(self):
+        # Clear the self.messages
+        self.messages.clear()
+
     def get_images(self, return_pil=False):
         images = []
         for i, (role, msg) in enumerate(self.messages[self.offset:]):
