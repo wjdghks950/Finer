@@ -76,7 +76,8 @@ if __name__ == '__main__':
     parser.add_argument("--preds_dir", type=str, default="")
 
     parser.add_argument("--task_type_id", type=int, required=True)
-    parser.add_argument("--prompt_type_id", type=int, required=True)
+    parser.add_argument("--use_prompt", action="store_true", default=False)
+    parser.add_argument("--prompt_type_id", type=int, default=0)
 
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
@@ -92,13 +93,16 @@ if __name__ == '__main__':
     task_types = ["high_coarse", "coarse", "fine"]
     task_type_id = args.task_type_id
 
-    use_prompt = False
+    use_prompt = args.use_prompt
     prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
     prompt_type_id = args.prompt_type_id
 
     # Fix this to change the evaluation types
     task_type = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
     
+    print("use_prompt : ", use_prompt)
+    print("task_type : ", task_type)
+
     data_dir = args.data_dir
     data_path = args.data_path
     coarse_lbl_dir = args.coarse_lbl_dir
