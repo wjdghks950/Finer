@@ -1,11 +1,12 @@
-import sys
 import re
 import os
 import numpy as np
 import json
 import string
+import argparse
+
 from collections import Counter
-import pickle
+
 
 def normalize_answer(s):
 
@@ -28,9 +29,6 @@ def normalize_answer(s):
 def f1_score(prediction, ground_truth):
     normalized_prediction = normalize_answer(prediction)
     normalized_ground_truth = normalize_answer(ground_truth)
-    
-    # if normalized_ground_truth in normalized_prediction:
-    #     return 1.0, 1.0, 1.0
 
     ZERO_METRIC = (0, 0, 0)
 
@@ -47,7 +45,8 @@ def f1_score(prediction, ground_truth):
 
 
 def exact_match_score(prediction, ground_truth):
-    if normalize_answer(ground_truth) in normalize_answer(prediction):
+    if normalize_answer(prediction) in normalize_answer(ground_truth) or \
+       normalize_answer(ground_truth) in normalize_answer(prediction):
         return 1.0
     else:
         return (normalize_answer(prediction) == normalize_answer(ground_truth))
@@ -59,17 +58,56 @@ def eval(pred, gold):
     return f1, em
 
 
-def remove_ans_prefix(text):
-    ans_start_idx = text.find("Answer:")
-    start_idx = 0 if ans_start_idx == -1 else ans_start_idx + len("Answer:")
+def remove_ans_prefix(text, prefix="Answer:"):
+    ans_start_idx = text.find(prefix)
+    start_idx = 0 if ans_start_idx == -1 else ans_start_idx + len(prefix)
     ans_text = text[start_idx:].strip().replace("</s>", "")
     return ans_text
     
 
 if __name__ == '__main__':
-    task_type = "high_coarse"
-    data_dir = "/home/jk100/data/data/inaturalist"
-    data_path = "val_noplant_64.json"
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--data_dir", type=str, default= "/home/jk100/data/data/inaturalist")
+    parser.add_argument("--data_path", type=str, default="val_noplant_64.json")
+    parser.add_argument("--coarse_lbl_dir", type=str, default= "/home/jk100/code/ecole/gpt_output")
+    parser.add_argument("--coarse_lbl_file", type=str, default="coarse_grained_lbls_gpt4_val_noplant64.json")
+    parser.add_argument("--preds_dir", type=str, default="")
+
+    parser.add_argument("--task_type_id", type=int, required=True)
+    parser.add_argument("--prompt_type_id", type=int, required=True)
+
+    parser.add_argument("--device", type=str, default="cuda")
+    parser.add_argument("--conv-mode", type=str, default=None)
+    parser.add_argument("--temperature", type=float, default=0.2)
+    parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--load-8bit", action="store_true")
+    parser.add_argument("--load-4bit", action="store_true")
+   
+    parser.add_argument("--debug", action="store_true")
+    parser.add_argument("--image-aspect-ratio", type=str, default='pad')
+    args = parser.parse_args()
+
+    task_types = ["high_coarse", "coarse", "fine"]
+    task_type_id = args.task_type_id
+
+    use_prompt = False
+    prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
+    prompt_type_id = args.prompt_type_id
+
+    # Fix this to change the evaluation types
+    task_type = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
+    
+    data_dir = args.data_dir
+    data_path = args.data_path
+    coarse_lbl_dir = args.coarse_lbl_dir
+    coarse_lbl_file = args.coarse_lbl_file
+
+    if "coarse" in task_type:
+        with open(os.path.join(coarse_lbl_dir, coarse_lbl_file), "r") as fp:
+            coarse_lbls = json.load(fp)
+            fp.close()
 
     preds_dir = "../preds"
     out_path = f"inaturalist_{task_type}_output.json"
@@ -94,13 +132,16 @@ if __name__ == '__main__':
         img_id = annotation['image_id']
         cidx = annotation['category_id']  # category index
         category_dict = dataset['categories'][cidx]
-        if task_type == "high_coarse":
+        if "high_coarse" in task_type:
             lbl = category_dict['supercategory'].lower().strip()
-        elif task_type == "coarse":
-            lbl = category_dict['common_name'].lower().strip()
-        elif task_type == "fine":
+        elif "coarse" in task_type:
+            lbl = coarse_lbls[str(idx)]
+        elif "fine" in task_type:
             lbl = category_dict['name'].lower().strip()
-        # TODO: Load the dataset and evaluate the output
+        elif task_type in ['cot', 'l2m', 'attr_prompt']:
+            # TODO: Implement the CoT, Least-to-most, Attribute-Seeking Prompt evaluation
+            pass
+
         pred_text = remove_ans_prefix(pred_text)
         print(f"{idx} | {pred_text} | {lbl} ")
         f1, em = eval(pred_text, lbl)
