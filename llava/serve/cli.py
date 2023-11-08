@@ -6,6 +6,7 @@ from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init, postprocess_llava_output
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
+from llava.eval.eval_inaturalist import remove_ans_prefix
 
 from PIL import Image
 from tqdm import tqdm
@@ -57,23 +58,56 @@ def main(args):
         roles = conv.roles
 
 
-    # TODO: Implement dataset loaded, singel-turn output case
+    # iNaturalist dataset inference
     if args.data_dir is not None:
         pred_dict = {}
 
-        task_type = "high_coarse"
-        out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_type}_output.json"
-        user_prompt = PROMPT_DICT[task_type]
+        task_types = ["high_coarse", "coarse", "fine"]
+        task_type_id = args.task_type_id
 
+        # TODO: Implement the `attr_seek` case (1. Ask for attributes -> 3. Ask for lower-level concept) (i.e., ask the details)
+        use_prompt = args.use_prompt
+        prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
+        prompt_type_id = args.prompt_type_id
+
+        if prompt_types[prompt_type_id] == "attr_seek":
+            args.dialogue_mode = 'multi'
+
+        task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
+        out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_name}_output.json"
+        user_prompt = PROMPT_DICT[task_name]
+
+        if task_type_id in [1, 2]:  # Inject higher-level granularity output into finer-level granularity input
+            if args.use_gold_coarse and task_type_id == 2:
+                coarse_lbl_dir = args.coarse_lbl_dir
+                coarse_lbl_file = args.coarse_lbl_file
+                # Use the GPT-3.5-turbo generated Coarse-grained labels (treat them as gold)
+                with open(os.path.join(coarse_lbl_dir, coarse_lbl_file), "r") as fp:
+                    coarse_out_dict = json.load(fp)
+                    fp.close()
+            else:
+                coarse_out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_types[task_type_id - 1]}_output.json"
+                with open(coarse_out_path, "r") as fp:
+                    coarse_out_dict = json.load(fp)
+                    fp.close()
+
+            placeholder_str = "{concept_placeholder}"
+
+        # Load the original iNaturalist dataset
         if os.path.exists(os.path.join(args.data_dir, args.data_path)):
             with open(os.path.join(args.data_dir, args.data_path), "r") as fp:
                 dataset = json.load(fp)
-            fp.close()
+                fp.close()
 
         for idx, data in enumerate(dataset['annotations']):
             img_dict = dataset['images'][idx]
+            if task_type_id in [1, 2]:  # For the "coarse" and "fine" cases, inject the previous output into the current prompt
+                user_prompt = PROMPT_DICT[task_name]
+                user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
             inp = user_prompt
             # print(f"USER_PROMPT : {user_prompt}")
+            # exit()
+
             image = load_image(os.path.join(args.data_dir, img_dict['file_name']))
             # Similar operation in model_worker.py
             image_tensor = process_images([image], image_processor, args)
@@ -96,23 +130,24 @@ def main(args):
                     # later messages
                     conv.append_message(conv.roles[0], inp)
                 conv.append_message(conv.roles[1], None)
+                prompt = conv.get_prompt()
 
             elif args.dialogue_mode == 'single':  # Single-turn case
-                if idx == 0:
-                    if model.config.mm_use_im_start_end:
-                        inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
-                    else:
-                        inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
-                    conv.append_message(conv.roles[0], inp)
-                    conv.append_message(conv.roles[1], None)
+                if model.config.mm_use_im_start_end:
+                    inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
                 else:
-                    image = None
-            prompt = conv.get_prompt()
+                    inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
+                conv.append_message(conv.roles[0], inp)
+                conv.append_message(conv.roles[1], None)
+
+                # In `single` turn, empty conv after one turn
+                prompt = conv.get_prompt()
+                conv.clear_message()
 
             if (idx + 1) % 1 == 0:
-                print("\nconv.roles[0] : ", conv.roles[0])
-                print("conv.roles[1] : ", conv.roles[1])
                 print(f" >> conv.get_prompt() : {prompt}\n")
+                # print("\nconv.roles[0] : ", conv.roles[0])
+                # print("conv.roles[1] : ", conv.roles[1])
 
             input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
             stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
@@ -141,11 +176,10 @@ def main(args):
                 print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
 
         # Save the outputs
-        if not os.path.exists(out_path):
-            with open(out_path, "w") as outfp:
-                json.dump(pred_dict, outfp)
-                print(f"Saved `pred_dict` to {out_path}")
-                outfp.close()
+        with open(out_path, "w") as outfp:
+            json.dump(pred_dict, outfp)
+            print(f"Saved `pred_dict` to {out_path}")
+            outfp.close()
 
 
     else:  # Original, multi-turn dialogue setting
@@ -212,9 +246,19 @@ if __name__ == "__main__":
     parser.add_argument("--model-path", type=str, default="facebook/opt-350m")
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--image-file", type=str, required=True)
-    parser.add_argument("--data_dir", type=str, default=None)
-    parser.add_argument("--data_path", type=str, default=None)
-    parser.add_argument("--dialogue-mode", type=str, default=None)  # ['multi', 'single']
+
+    parser.add_argument("--data_dir", type=str, default= "/home/jk100/data/data/inaturalist")
+    parser.add_argument("--data_path", type=str, default="val_noplant_64.json")
+    parser.add_argument("--coarse_lbl_dir", type=str, default= "/home/jk100/code/ecole/gpt_output")
+    parser.add_argument("--coarse_lbl_file", type=str, default="coarse_grained_lbls_gpt4_val_noplant64.json")
+    parser.add_argument("--preds_dir", type=str, default="")
+
+    parser.add_argument("--task_type_id", type=int, required=True)
+    parser.add_argument("--use_prompt", action="store_true", default=False)
+    parser.add_argument("--use_gold_coarse", action="store_true", default=False, help="Using GPT-3.5-turbo generated coarse-grained labels")
+    parser.add_argument("--prompt_type_id", type=int, default=0)
+
+    parser.add_argument("--dialogue-mode", type=str, default='single')  # ['multi', 'single']
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
     parser.add_argument("--temperature", type=float, default=0.2)
