@@ -15,22 +15,17 @@ Provide your answer after "Answer:" and make sure to follow the binomial nomencl
 
 # Multi-turn dialogue for attribute extraction & concept classification
 attr_seek = '''
-What kind of physical attributes do you see in the {concept_placeholder}? 
-Provide the set of detailed physical attributes after "Attributes:" in the following format: 
-Attributes:
-- attribute 1
-- attribute 2
-...
-- attribute N
+What kind of physical attributes do you see in the {concept_placeholder}? \
+Provide the set of detailed physical attributes after "Attributes:".
 '''
 
 attr_seek_coarse = '''
-Using the set of attributes after "Attributes:", tell me what kind of {concept_placeholder} it is.
+Now, tell me what kind of {concept_placeholder} it is. \
 Provide your answer after "Answer:".
 '''
 
 attr_seek_fine = '''
-Using the set of attributes after "Attributes:", tell me what kind of {concept_placeholder} it is.
+Now, tell me what kind of {concept_placeholder} it is. \
 Provide your answer after "Answer:" and make sure to follow the binomial nomenclature format (e.g., genus-species).
 '''
 
