@@ -57,6 +57,7 @@ def main(args):
     else:
         roles = conv.roles
 
+    image = None
 
     # iNaturalist dataset inference
     if args.data_dir is not None:
@@ -70,22 +71,23 @@ def main(args):
         prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
         prompt_type_id = args.prompt_type_id
 
-        if prompt_types[prompt_type_id] == "attr_seek":
-            args.dialogue_mode = 'multi'
-
         task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
         out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_name}_output.json"
         user_prompt = PROMPT_DICT[task_name]
 
+        if prompt_types[prompt_type_id] == "attr_seek":
+            args.dialogue_mode = 'multi'
+
         if task_type_id in [1, 2]:  # Inject higher-level granularity output into finer-level granularity input
             if args.use_gold_coarse and task_type_id == 2:
+                # Use the GPT-3.5-turbo generated Coarse-grained labels (treat them as gold)
                 coarse_lbl_dir = args.coarse_lbl_dir
                 coarse_lbl_file = args.coarse_lbl_file
-                # Use the GPT-3.5-turbo generated Coarse-grained labels (treat them as gold)
                 with open(os.path.join(coarse_lbl_dir, coarse_lbl_file), "r") as fp:
                     coarse_out_dict = json.load(fp)
                     fp.close()
             else:
+                # Use the LLaVA-predicted Coarse-grained outputs
                 coarse_out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_types[task_type_id - 1]}_output.json"
                 with open(coarse_out_path, "r") as fp:
                     coarse_out_dict = json.load(fp)
@@ -104,35 +106,65 @@ def main(args):
             if task_type_id in [1, 2]:  # For the "coarse" and "fine" cases, inject the previous output into the current prompt
                 user_prompt = PROMPT_DICT[task_name]
                 user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
+                if prompt_types[prompt_type_id] == "attr_seek":
+                    aseek_init_prompt = PROMPT_DICT[prompt_types[prompt_type_id]]
+                    aseek_init_prompt = aseek_init_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
             inp = user_prompt
+
+            print("PRED OUTPUT :: ", coarse_out_dict[str(idx)])
             # print(f"USER_PROMPT : {user_prompt}")
-            # exit()
+            # if prompt_types[prompt_type_id] == "attr_seek":
+            #     print(f"ATTR_SEEK_PROMPT : {aseek_init_prompt}")
+            # # exit()
 
             image = load_image(os.path.join(args.data_dir, img_dict['file_name']))
             # Similar operation in model_worker.py
             image_tensor = process_images([image], image_processor, args)
-            print(f"======idx: {idx} | image_tensor (shape) : {image_tensor.shape}======")
+            # print(f"======idx: {idx} | image_tensor (shape) : {image_tensor.shape}======")
             if type(image_tensor) is list:
                 image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
             else:
                 image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-            if args.dialogue_mode == 'multi':
-                if image is not None:
-                    # first message
-                    if model.config.mm_use_im_start_end:
-                        inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
-                    else:
-                        inp = DEFAULT_IMAGE_TOKEN + '\n' + inp
-                    conv.append_message(conv.roles[0], inp)
-                    image = None
+            if args.dialogue_mode == 'multi' and prompt_types[prompt_type_id] == "attr_seek":
+
+                # Attribute Seek - Initial message
+                if model.config.mm_use_im_start_end:
+                    inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + aseek_init_prompt
                 else:
-                    # later messages
-                    conv.append_message(conv.roles[0], inp)
+                    inp = DEFAULT_IMAGE_TOKEN + '\n' + aseek_init_prompt
+                conv.append_message(conv.roles[0], inp)
                 conv.append_message(conv.roles[1], None)
                 prompt = conv.get_prompt()
+                
+                input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+                stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+                keywords = [stop_str]
+                stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+
+                # Run the model for attribute extraction
+                with torch.inference_mode():
+                    output_ids = model.generate(
+                        input_ids,
+                        images=image_tensor,
+                        do_sample=True,
+                        temperature=args.temperature,
+                        max_new_tokens=args.max_new_tokens,
+                        use_cache=True,
+                        stopping_criteria=[stopping_criteria])
+
+                outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+                conv.messages[-1][-1] = outputs  # Append the extracted attribute set answer to the input stream
+                # Append the attribute-using prompt: [attr_seek_coarse, attr_seek_fine] to the input stream
+                user_prompt = PROMPT_DICT[task_name]
+                user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
+                conv.append_message(conv.roles[0], user_prompt)
+                conv.append_message(conv.roles[1], None)
+
+                # print("****ATTRIBUTE_SEEK_PROMPT (INTERM.) >> ", conv.get_prompt())
 
             elif args.dialogue_mode == 'single':  # Single-turn case
+
                 if model.config.mm_use_im_start_end:
                     inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
                 else:
@@ -144,18 +176,17 @@ def main(args):
                 prompt = conv.get_prompt()
                 conv.clear_message()
 
-            if (idx + 1) % 1 == 0:
-                print(f" >> conv.get_prompt() : {prompt}\n")
-                # print("\nconv.roles[0] : ", conv.roles[0])
-                # print("conv.roles[1] : ", conv.roles[1])
+            # if (idx + 1) % 1 == 0:
+            #     print(f" >> conv.get_prompt() : {conv.get_prompt()}\n")
 
+            prompt = conv.get_prompt()
             input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
             stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
             keywords = [stop_str]
             stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
             streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 
-            print(f"======idx: {idx} | input_ids: {input_ids.shape}======")
+            # print(f"======idx: {idx} | input_ids: {input_ids.shape}======")
 
             with torch.inference_mode():
                 output_ids = model.generate(
@@ -170,7 +201,10 @@ def main(args):
 
             outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
             pred_dict[idx] = outputs.strip()
-            # conv.messages[-1][-1] = outputs  # Append the answer to the input stream
+            # print("CONV_MESSAGES :: ", conv.messages)
+            # print("<< pred_dict >>\n", pred_dict)
+            print("==\n"*2)
+            conv.clear_message()
 
             if args.debug:
                 print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
@@ -247,7 +281,7 @@ if __name__ == "__main__":
     parser.add_argument("--model-base", type=str, default=None)
     parser.add_argument("--image-file", type=str, required=True)
 
-    parser.add_argument("--data_dir", type=str, default= "/home/jk100/data/data/inaturalist")
+    parser.add_argument("--data_dir", type=str, default=None)
     parser.add_argument("--data_path", type=str, default="val_noplant_64.json")
     parser.add_argument("--coarse_lbl_dir", type=str, default= "/home/jk100/code/ecole/gpt_output")
     parser.add_argument("--coarse_lbl_file", type=str, default="coarse_grained_lbls_gpt4_val_noplant64.json")
