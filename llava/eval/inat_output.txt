@@ -1,64 +1,130 @@
-0 | Insects | insects 
-1 |  | insects 
-2 | Insects | insects 
-3 |  | insects 
-4 | Birds | birds 
-5 | Birds | insects 
-6 | " from one of the four categories: {black, brown, white, yellow}. | insects 
-7 | White | birds 
-8 | The organism in the image is a white plant with a small white flower on it. | mollusks 
-9 | Plants | birds 
-10 | Insects | insects 
-11 |  | insects 
-12 | Insects | insects 
-13 |  | birds 
-14 | Insects | insects 
-15 |  | insects 
-16 | Birds | birds 
-17 | Butterfly | insects 
-18 | The image features a butterfly floating in a body of water. The butterfly is surrounded by a dark background, which creates a striking contrast against the butterfly's delicate wings. The scene captures the beauty and grace of this delicate creature as it glides through the water. | mollusks 
-19 | Butterfly | birds 
-20 | The image does not show a butterfly. It shows a bald eagle perched on a tree branch. | birds 
-21 | Insects | insects 
-22 | The image shows a black bear in a tree. | mammals 
-23 | Insects | insects 
-24 | The image features a bird perched on a tree branch. | birds 
-25 | Bird | birds 
-26 | The bird is sitting on a rock. | reptiles 
-27 | Bird | birds 
-28 | The image shows a group of birds walking across a lush green field. | mammals 
-29 | Birds | birds 
-30 | Insects | insects 
-31 |  | insects 
-32 | Insects | insects 
-33 |  | insects 
-34 | Insects | mollusks 
-35 |  | amphibians 
-36 | Insects | insects 
-37 | Snake | reptiles 
-38 | This is a joke. | insects 
-39 | Insects | insects 
-40 | The image features a white butterfly with yellow spots perched on a leaf. | insects 
-41 | Insects | insects 
-42 | The image shows a group of giraffes standing in a field. | mammals 
-43 | Mammals | birds 
-44 | The organism in the image is a human hand holding a shell. | mollusks 
-45 | Insects | ray-finned fishes 
-46 | The image features a blue butterfly perched on a green stem. | insects 
-47 | Insects | insects 
-48 | The image shows a grassy field with a brown bird standing on the grass. The bird is looking down at the ground, possibly searching for food. The presence of the bird in the image suggests that it is a natural habitat for the bird, and it is likely to be feeding on insects or other small organisms found in the grass. | birds 
-49 | Bird | ray-finned fishes 
-50 | The image features a butterfly perched on a yellow flower. | insects 
-51 | Insects | birds 
-52 | The insect in the image is a bird with a long beak, which is walking through the grass. | birds 
-53 | Insects | insects 
-54 | The black bird is perched on the edge of a building. | birds 
-55 | Birds | mammals 
-56 | " from one of the four categories: {white, black, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple, orange, white, gray, brown, yellow, pink, red, green, blue, purple | birds 
-57 | insect | insects 
-58 | " from one of the four categories: {black, brown, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, black, white, yellow, green, red, blue, pink, orange, purple, gray, | insects 
-59 | Birds | birds 
-60 | " from one of the four categories: {black, brown, white, green, red, yellow, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, | birds 
-61 | Gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, purple, gray, black, white, pink, orange, blue, pur | insects 
-62 | Bird | birds 
-63 | The image features a small bird perched on a cement surface. | insects 
+0 | Ladybug | clown stink bug 
+clown stink bug  ||  ladybug
+1 | Moth | yellow-collared slug moth 
+yellowcollared slug moth  ||  moth
+2 | Butterfly | exposed bird dropping moth 
+exposed bird dropping moth  ||  butterfly
+3 | Ladybug | white-crossed seed bug 
+whitecrossed seed bug  ||  ladybug
+4 | Bee | willow grouse 
+willow grouse  ||  bee
+5 | Butterfly | marsh fritillary 
+marsh fritillary  ||  butterfly
+6 | Moth | blinded sphinx moth 
+blinded sphinx moth  ||  moth
+7 | Butterfly | rose-ringed parakeet 
+roseringed parakeet  ||  butterfly
+8 | Caterpillar | branched dendronotus 
+branched dendronotus  ||  caterpillar
+9 | Bird | yellow-rumped thornbill 
+yellowrumped thornbill  ||  bird
+10 | Moth | eastern panthea 
+eastern panthea  ||  moth
+11 | Caterpillar | violet-winged grasshopper 
+violetwinged grasshopper  ||  caterpillar
+12 | Ladybug | white-margined burrower bug 
+whitemargined burrower bug  ||  ladybug
+13 | Bird | yellow-billed cuckoo 
+yellowbilled cuckoo  ||  bird
+14 | Caterpillar | achemon sphinx moth 
+achemon sphinx moth  ||  caterpillar
+15 | Grasshopper | two-striped grasshopper 
+twostriped grasshopper  ||  grasshopper
+16 | Bird | white-winged swallow 
+whitewinged swallow  ||  bird
+17 | Butterfly | green leuconycta 
+green leuconycta  ||  butterfly
+18 | Crab | colorful dirona 
+colorful dirona  ||  crab
+19 | Bird | western marsh-harrier 
+western marshharrier  ||  bird
+20 | Bird | bald eagle 
+bald eagle  ||  bird
+21 | Caterpillar | yellow-striped armyworm 
+yellowstriped armyworm  ||  caterpillar
+22 | Spider | mantled howler monkey 
+mantled howler monkey  ||  spider
+23 | Grasshopper | musk beetle 
+musk beetle  ||  grasshopper
+24 | Bird | long-billed thrasher 
+longbilled thrasher  ||  bird
+25 | Bird | crowned lapwing 
+crowned lapwing  ||  bird
+26 | Lizard | roughtail rock agama 
+roughtail rock agama  ||  lizard
+27 | Bee | red crossbill 
+red crossbill  ||  bee
+28 | Bees | domestic sheep 
+domestic sheep  ||  bees
+29 | Bird | australian kestrel 
+australian kestrel  ||  bird
+30 | Bee | eastern hornet fly 
+eastern hornet fly  ||  bee
+31 | Butterfly | green hairstreak 
+green hairstreak  ||  butterfly
+32 | Butterfly | codling moth 
+codling moth  ||  butterfly
+33 | Butterfly | julia's dicymolomia moth 
+julias dicymolomia moth  ||  butterfly
+34 | Caterpillar | lined chiton 
+lined chiton  ||  caterpillar
+35 | Slug | alpine salamander 
+alpine salamander  ||  slug
+36 | Grasshopper | roesel's bush-cricket 
+roesels bushcricket  ||  grasshopper
+37 | Snake | striped racer 
+striped racer  ||  snake
+38 | Butterfly | lesser purple emperor 
+lesser purple emperor  ||  butterfly
+39 | Butterfly | codling moth 
+codling moth  ||  butterfly
+40 | Butterfly | white angled-sulphur 
+white angledsulphur  ||  butterfly
+41 | Caterpillar | milkweed aphid 
+milkweed aphid  ||  caterpillar
+42 | Giraffe | guanaco 
+guanaco  ||  giraffe
+43 | Bird | grey warbler 
+grey warbler  ||  bird
+44 | Snail | ostrich foot snail 
+ostrich foot snail  ||  snail
+45 | Butterfly | moon wrasse 
+moon wrasse  ||  butterfly
+46 | Butterfly | eastern tailed-blue 
+eastern tailedblue  ||  butterfly
+47 | Butterfly | american meadow fritillary 
+american meadow fritillary  ||  butterfly
+48 | Bird | cape spurfowl 
+cape spurfowl  ||  bird
+49 | Crab | oyster drum 
+oyster drum  ||  crab
+50 | Butterfly | atlantis fritillary 
+atlantis fritillary  ||  butterfly
+51 | Birds | south island pied oystercatcher 
+south island pied oystercatcher  ||  birds
+52 | Bird | common hoopoe 
+common hoopoe  ||  bird
+53 | Beetle | eastern eyed click beetle 
+eastern eyed click beetle  ||  beetle
+54 | Bird | blue whistling-thrush 
+blue whistlingthrush  ||  bird
+55 | Bats | proboscis bat 
+proboscis bat  ||  bats
+56 | Bird | red phalarope 
+red phalarope  ||  bird
+57 | Beetle | european field cricket 
+european field cricket  ||  beetle
+58 | Butterfly | little wood satyr 
+little wood satyr  ||  butterfly
+59 | Bird | pine siskin 
+pine siskin  ||  bird
+60 | Bird | swainson's thrush 
+swainsons thrush  ||  bird
+61 | Grasshopper | carolina mantis 
+carolina mantis  ||  grasshopper
+62 | Bird | resplendent quetzal 
+resplendent quetzal  ||  bird
+63 | Caterpillar | variegated cutworm 
+variegated cutworm  ||  caterpillar
+F1 Score : 0.04010416666666666
+EM Score : 0.078125
