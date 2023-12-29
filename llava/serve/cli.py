@@ -191,10 +191,7 @@ def main(args):
                 # print("****ATTRIBUTE_SEEK_PROMPT (INTERM.) >> ", conv.get_prompt())
 
             elif args.dialogue_mode == 'single':  # Single-turn case
-                print('args.dialogue_mod : ', args.dialogue_mode)
-                print("INPUT : ", inp)
                 if task_type_id == 3 and args.modality == "text":
-                    print("INPUT : ", inp)
                     pass  # No image token needed - Text-only attr_gen case
                 else:
                     if model.config.mm_use_im_start_end:
