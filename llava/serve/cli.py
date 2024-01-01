@@ -66,7 +66,6 @@ def main(args):
         task_types = ["high_coarse", "coarse", "fine", "attr_gen"]
         task_type_id = args.task_type_id
 
-        # TODO: Implement the `attr_seek` case (1. Ask for attributes -> 3. Ask for lower-level concept) (i.e., ask the details)
         use_prompt = args.use_prompt
         prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
         prompt_type_id = args.prompt_type_id
@@ -115,10 +114,10 @@ def main(args):
 
         for idx, data in enumerate(data_iter):
             # dataset.keys() - dict_keys(['info', 'images', 'categories', 'annotations', 'licenses'])
-            # print()
-            img_dict = dataset['images'][idx]
+            print("dataset (length) : ", len(data_iter))
 
             if task_type_id in [1, 2]:
+                img_dict = dataset['images'][idx]
                 # For the "coarse" and "fine" cases, inject the previous output into the current prompt (or gold if --use_gold_coarse)
                 user_prompt = PROMPT_DICT[task_name]
                 user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
@@ -235,8 +234,6 @@ def main(args):
             # print("<< pred_dict >>\n", pred_dict)
             print("==\n"*2)
             conv.clear_message()
-            if idx > 2:
-                exit()
 
             if args.debug:
                 print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
@@ -323,8 +320,9 @@ if __name__ == "__main__":
     parser.add_argument("--use_prompt", action="store_true", default=False)
     parser.add_argument("--use_gold_coarse", action="store_true", default=False, help="Using GPT-3.5-turbo generated coarse-grained labels")
     parser.add_argument("--prompt_type_id", type=int, default=0)
-    parser.add_argument("--input_type", type=str, help="When task_type_id=`attr_gen`, choose from [binomial or common]")
+    parser.add_argument("--input_type", type=str, help="When task_type_id==`attr_gen`, choose from [binomial or common]")
     parser.add_argument("--modality", type=str, default="text", help="When task_type_id == 3, args.modality is either `image` or `text`")
+    parser.add_argument("--model", type=str, default="llava-7b", help="Model to use for attribute generation when task_type_id==`attr_gen`")
 
     parser.add_argument("--dialogue-mode", type=str, default='single')  # ['multi', 'single']
     parser.add_argument("--device", type=str, default="cuda")

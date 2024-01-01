@@ -42,6 +42,10 @@ elif [ "$task_type_id" = 3 ]; then
   echo "Running generating attribute..."
   echo "Use binomial or common_name [binomial/common] ? >> "
   read input_type
+  echo "Use text or image [text/image] ? >> "
+  read modality
+  echo "Model name: [llava-7b / llava-13b / gpt-4 / gpt-3.5] >> "
+  read model
 	python -m llava.serve.cli \
           --model-path liuhaotian/llava-v1.5-7b \
           --data_dir /home/jk100/data/data/inaturalist \
@@ -49,5 +53,7 @@ elif [ "$task_type_id" = 3 ]; then
           --image-file None \
           --task_type_id $task_type_id \
           --input_type $input_type \
+          --modality $modality \
+          --model $model \
           --load-8bit
 fi
