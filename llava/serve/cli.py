@@ -4,13 +4,14 @@ import torch
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init, postprocess_llava_output
+from llava.utils import disable_torch_init, encode_image
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
 from llava.eval.eval_inaturalist import remove_ans_prefix
 
 from PIL import Image
 from tqdm import tqdm
 
+import jsonlines
 import requests
 import os
 import json
@@ -19,6 +20,11 @@ from io import BytesIO
 from transformers import TextStreamer
 
 from prompts import PROMPT_DICT
+
+# OpenAI query module
+import openai
+
+openai.api_key = "<YOUR-API-KEY>"
 
 
 def load_image(image_file):
@@ -30,17 +36,62 @@ def load_image(image_file):
     return image
 
 
+def openai_gpt_call(system_prompt, user_prompt, model, image_path, max_tokens=256, temp=0.0):
+    '''
+    messages=[
+        {
+        "role": "user",
+        "content": [
+            {"type": "text", "text": "What's in this image?"},
+            {
+            "type": "image_url",
+            "image_url": {
+                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
+            },
+            },
+        ],
+        }
+    ],
+    '''
+    base64_image = encode_image(image_path)  # base64-encoded image
+    user_content = [
+        {"type": "text", "text": user_prompt},
+        {"type": "image_url", "image_url": {
+            "url": f"data:image/jpeg;base64,{base64_image}"
+        }
+        },
+    ]
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_content},
+    ]
+    response = openai.ChatCompletion.create(
+        model=model, 
+        messages=messages
+    )
+    return response, response['choices'][0]['message']['content']
+
+
+def preprocess_gpt_output(response, start_str="Answer:"):
+    answer_start_idx = response.find(start_str) + len(start_str) if response.find(start_str) != -1 else 0
+    prepro_response = response[answer_start_idx:]
+    return prepro_response 
+
+
 def main(args):
     # Model
     disable_torch_init()
 
-    model_name = get_model_name_from_path(args.model_path)
-    tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, args.model_base, model_name, args.load_8bit, args.load_4bit, device=args.device)
+    if "gpt-" not in args.model:
+        model_name = get_model_name_from_path(args.model_path)
+        tokenizer, model, image_processor, context_len = load_pretrained_model(args.model_path, args.model_base, model_name, args.load_8bit, args.load_4bit, device=args.device)
+    else:  # GPT-4V
+        model_name = "gpt-4-vision-preview"
 
     if 'llama-2' in model_name.lower():
         conv_mode = "llava_llama_2"
-    elif "v1" in model_name.lower():
-        conv_mode = "llava_v1"
+    elif "v1" in model_name.lower() or "gpt-4" in model_name.lower():
+        conv_mode = "llava_v1"  # GPT-4V uses the same `system_prompt` as llava_v1
     elif "mpt" in model_name.lower():
         conv_mode = "mpt"
     else:
@@ -72,8 +123,13 @@ def main(args):
 
         task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
         out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_name}_output.json"
+        
         if task_types[task_type_id] == 3:
-            out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.input_type}_output.json"
+            if args.modality == "text":
+                out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_{args.input_type}_{args.model}_output.json"
+            else:  # args.modality == "image"
+                out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_{args.model}_output.json"
+        
         user_prompt = PROMPT_DICT[task_name]
 
         if prompt_types[prompt_type_id] == "attr_seek":
@@ -111,22 +167,32 @@ def main(args):
             print("categories (sample) : ", dataset['categories'][0])
             data_iter = dataset['categories']
         
+        print("dataset (length) : ", len(data_iter))
+
+        if "gpt-4" in args.model:
+            gpt4_out_writer = jsonlines.open(out_path, mode='a')
 
         for idx, data in enumerate(data_iter):
             # dataset.keys() - dict_keys(['info', 'images', 'categories', 'annotations', 'licenses'])
-            print("dataset (length) : ", len(data_iter))
+            print("Iteration idx: ", idx)
 
-            if task_type_id in [1, 2]:
+            if task_type_id < 3 or (task_type_id == 3 and args.modality == "image"):
                 img_dict = dataset['images'][idx]
-                # For the "coarse" and "fine" cases, inject the previous output into the current prompt (or gold if --use_gold_coarse)
-                user_prompt = PROMPT_DICT[task_name]
-                user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
                 
-                if prompt_types[prompt_type_id] == "attr_seek":
-                    aseek_init_prompt = PROMPT_DICT[prompt_types[prompt_type_id]]
-                    aseek_init_prompt = aseek_init_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
-                
-                image = load_image(os.path.join(args.data_dir, img_dict['file_name']))
+                if task_type_id < 3:
+                    # For the "coarse" and "fine" cases, inject the previous output into the current prompt (or gold if --use_gold_coarse)
+                    user_prompt = PROMPT_DICT[task_name]
+                    user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
+                    
+                    if prompt_types[prompt_type_id] == "attr_seek":
+                        aseek_init_prompt = PROMPT_DICT[prompt_types[prompt_type_id]]
+                        aseek_init_prompt = aseek_init_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
+                    
+                else:  # task_type_id == 3:
+                    user_prompt = PROMPT_DICT[task_name + "_" + args.modality]  # "attr_gen_image"
+
+                image_path = os.path.join(args.data_dir, img_dict['file_name'])
+                image = load_image(image_path)
                 # Similar operation in model_worker.py
                 image_tensor = process_images([image], image_processor, args)
 
@@ -136,8 +202,9 @@ def main(args):
                 else:
                     image_tensor = image_tensor.to(model.device, dtype=torch.float16)
 
-            elif task_type_id == 3:
-                # For the "attr_gen" case, simply replace the user_prompt with binomial nomenclature (or common name)
+            elif task_type_id == 3 and args.modality == "text":
+                # For the "attr_gen" & "modality == text" case, 
+                # simply replace the user_prompt with binomial nomenclature (or common name)
                 user_prompt = PROMPT_DICT[task_name]
                 binomial_name = data['name']
                 common_name = data['common_name']
@@ -200,39 +267,51 @@ def main(args):
                 conv.append_message(conv.roles[0], inp)
                 conv.append_message(conv.roles[1], None)
 
-            if (idx + 1) % 1 == 0:
-                print(f" >> conv.get_prompt() : {conv.get_prompt()}\n")
+            # if (idx + 1) % 1 == 0:
+            #     print(f" >> conv.get_prompt() : {conv.get_prompt()}\n")
+                
+            if "gpt-4" not in args.model:
+                prompt = conv.get_prompt()
+            else:
+                system_prompt = conv.system
+                user_prompt = inp
 
-            prompt = conv.get_prompt()
-            
             # In `single` turn, empty conv after one turn
             if args.dialogue_mode == 'single':
                 conv.clear_message()
+            
+            if "llava" in args.model:
+                input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
+                stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
+                keywords = [stop_str]
+                stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
+                streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
 
-            input_ids = tokenizer_image_token(prompt, tokenizer, IMAGE_TOKEN_INDEX, return_tensors='pt').unsqueeze(0).cuda()
-            stop_str = conv.sep if conv.sep_style != SeparatorStyle.TWO else conv.sep2
-            keywords = [stop_str]
-            stopping_criteria = KeywordsStoppingCriteria(keywords, tokenizer, input_ids)
-            streamer = TextStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+                # print(f"======idx: {idx} | input_ids: {input_ids.shape}======")
 
-            # print(f"======idx: {idx} | input_ids: {input_ids.shape}======")
+                with torch.inference_mode():
+                    output_ids = model.generate(
+                        input_ids,
+                        images=image_tensor if image is not None else None,
+                        do_sample=True,
+                        temperature=args.temperature,
+                        max_new_tokens=args.max_new_tokens,
+                        streamer=streamer,
+                        use_cache=True,
+                        stopping_criteria=[stopping_criteria])
 
-            with torch.inference_mode():
-                output_ids = model.generate(
-                    input_ids,
-                    images=image_tensor if image is not None else None,
-                    do_sample=True,
-                    temperature=args.temperature,
-                    max_new_tokens=args.max_new_tokens,
-                    streamer=streamer,
-                    use_cache=True,
-                    stopping_criteria=[stopping_criteria])
+                outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
 
-            outputs = tokenizer.decode(output_ids[0, input_ids.shape[1]:]).strip()
+            elif "gpt-4" in args.model:
+                max_tokens = 256
+                temp = args.temperature
+                raw_response, response = openai_gpt_call(system_prompt, user_prompt, model_name, image_path)
+                gpt4_out_writer.write(raw_response)
+
             pred_dict[idx] = outputs.strip()
-            print("==\n\nAGENT >> ", outputs)
+            # print("==\n\nAGENT >> ", outputs)
             # print("<< pred_dict >>\n", pred_dict)
-            print("==\n"*2)
+            # print("==\n"*2)
             conv.clear_message()
 
             if args.debug:

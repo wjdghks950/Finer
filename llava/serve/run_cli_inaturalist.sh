@@ -40,11 +40,13 @@ if [[ "$task_type_id" == "0" || "$task_type_id" == "1" || "$task_type_id" == "2"
 # If it's not for prompting, it's for generating attributes per concept
 elif [ "$task_type_id" = 3 ]; then
   echo "Running generating attribute..."
-  echo "Use binomial or common_name [binomial/common] ? >> "
-  read input_type
   echo "Use text or image [text/image] ? >> "
   read modality
-  echo "Model name: [llava-7b / llava-13b / gpt-4 / gpt-3.5] >> "
+  if [ "$modality" = "text" ]; then
+    echo "Use binomial or common_name [binomial/common] ? >> "
+    read input_type
+  fi
+  echo "Model name: [ llava-7b / llava-13b / gpt-4 ] >> "
   read model
 	python -m llava.serve.cli \
           --model-path liuhaotian/llava-v1.5-7b \
