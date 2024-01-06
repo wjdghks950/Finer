@@ -1,6 +1,8 @@
 #!/bin/bash
 
 DATA_PATH="val_noplant_64.json"
+CTGR2IMG_PATH="ctgr2img_dict.json"
+# DATA_PATH="val.json"
 
 echo "task_type_id [\"high_coarse: 0\", \"coarse: 1\", \"fine: 2\", \"attr_gen: 3\"] >> "
 read task_type_id
@@ -45,11 +47,24 @@ elif [ "$task_type_id" = 3 ]; then
   if [ "$modality" = "text" ]; then
     echo "Use binomial or common_name [binomial/common] ? >> "
     read input_type
+  else
+    echo "Input type is empty!"
+    input_type="null"
   fi
   echo "Model name: [ llava-7b / llava-13b / gpt-4 ] >> "
   read model
+  if [ "$model" = "llava-7b" ]; then
+    model_path="liuhaotian/llava-v1.5-7b"
+  elif [ "$model" = "llava-13b" ]; then
+    model_path="liuhaotian/llava-v1.5-13b"
+  elif [ "$model" = "gpt-4" ]; then
+    model_path="gpt-4-vision-preview"
+    echo "Use Wikipedia documents as input for attribute extraction? [y/n] >> "
+    read use_wiki
+  fi
+  if [ "$use_wiki" = "no" ]; then
 	python -m llava.serve.cli \
-          --model-path liuhaotian/llava-v1.5-7b \
+          --model-path $model_path \
           --data_dir /home/jk100/data/data/inaturalist \
           --data_path $DATA_PATH \
           --image-file None \
@@ -57,5 +72,25 @@ elif [ "$task_type_id" = 3 ]; then
           --input_type $input_type \
           --modality $modality \
           --model $model \
-          --load-8bit
+          --ctgr2img-path $CTGR2IMG_PATH \
+          --max-new-tokens 256 \
+          # --parse_attr
+          # --load-8bit
+          # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
+  else
+	python -m llava.serve.cli \
+          --model-path $model_path \
+          --data_dir /home/jk100/data/data/inaturalist \
+          --data_path $DATA_PATH \
+          --image-file None \
+          --task_type_id $task_type_id \
+          --input_type $input_type \
+          --modality $modality \
+          --model $model \
+          --ctgr2img-path $CTGR2IMG_PATH \
+          --max-new-tokens 256 \
+          --use_wiki
+          # --load-8bit
+          # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
+  fi
 fi
