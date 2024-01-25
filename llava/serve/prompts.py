@@ -106,30 +106,32 @@ Likely:
 - long tail
 - stout teeth
 
-In the required (Required:) set, do not include relative attributes like size or weight. \
+In the required (Required:) set, do not include relative, non-visual attributes like size or weight. \
 If no document is given, generate from what you already know about {concept_placeholder}.
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
 '''
 
 
 attr_gen_image = '''
-What are useful visual features for distinguishing the {concept_placeholder} in the photo? Provide the answer as lists of required and likely attributes. For example, for a school bus you might say:
+What are useful visual features for distinguishing the {concept_placeholder} in the photo? \
+Provide the answer as lists of required and likely attributes. For example, for a bengal tiger (Felis Tigris) you might say:
+
 Required:
-- yellow
-- black
-- wheels
-- windows
-- bus
+- yellow to light orange coat
+- dark brown to black stripes
+- black rings on the tail
+- inner legs and belly are white
+- 21 to 29 stripes
 
 Likely:
-- school children
-- stop sign
-- school bus lights
+- lives in mangrove, wooded habitat
+- amber, yellow eyes
+- large, padded paws
+- long tail
+- stout teeth
 
-Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none". For example, if there are no useful required features, say:
-
-Required:
-none
+In the required (Required:) set, do not include relative attributes like size or weight. \
+Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
 '''
 
 PROMPT_DICT = {}
