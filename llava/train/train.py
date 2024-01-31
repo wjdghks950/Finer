@@ -36,7 +36,8 @@ from llava.mm_utils import tokenizer_image_token
 
 from PIL import Image
 
-
+logger = logging.getLogger('llava_training')
+logger.setLevel(logging.INFO)
 local_rank = None
 
 
@@ -58,6 +59,9 @@ class ModelArguments:
     mm_use_im_start_end: bool = field(default=False)
     mm_use_im_patch_token: bool = field(default=True)
     mm_vision_select_feature: Optional[str] = field(default="patch")
+
+    def __repr__(self):
+        print(f"model_name_or_path : {self.model_name_or_path}")
 
 
 @dataclass
@@ -664,7 +668,8 @@ class LazySupervisedDataset(Dataset):
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
         if 'image' in sources[0]:
             image_file = self.list_data_dict[i]['image']
-            image_folder = self.data_args.image_folder
+            image_folder = self.data_args.image_folder if not "/shared/nas/data/m1" in image_file else ""
+            print("image_folder: ", image_folder)
             processor = self.data_args.image_processor
             image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
             if self.data_args.image_aspect_ratio == 'pad':
@@ -758,6 +763,7 @@ def train():
 
     parser = transformers.HfArgumentParser(
         (ModelArguments, DataArguments, TrainingArguments))
+
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     local_rank = training_args.local_rank
     compute_dtype = (torch.float16 if training_args.fp16 else (torch.bfloat16 if training_args.bf16 else torch.float32))

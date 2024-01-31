@@ -1,8 +1,7 @@
 #!/bin/bash
 
-DATA_PATH="val_noplant_64.json"
+DATA_PATH="val.json"
 CTGR2IMG_PATH="ctgr2img_dict.json"
-# DATA_PATH="val.json"
 
 echo "task_type_id [\"high_coarse: 0\", \"coarse: 1\", \"fine: 2\", \"attr_gen: 3\"] >> "
 read task_type_id
@@ -18,25 +17,23 @@ if [[ "$task_type_id" == "0" || "$task_type_id" == "1" || "$task_type_id" == "2"
     read prompt_type_id
     # Execute LLaVA
     python -m llava.serve.cli \
-            --model-path liuhaotian/llava-v1.5-7b \
-            --data_dir /home/jk100/data/data/inaturalist \
-            --data_path $DATA_PATH \
-            --image-file None \
-            --task_type_id $task_type_id \
-            --prompt_type_id $prompt_type_id \
-            --use_prompt \
-            --use_gold_coarse \
-            --load-8bit
+      --model-path liuhaotian/llava-v1.5-13b \
+      --data_dir /home/jk100/data/data/inaturalist \
+      --data_path $DATA_PATH \
+      --image-file None \
+      --task_type_id $task_type_id \
+      --prompt_type_id $prompt_type_id \
+      --use_prompt \
+      --use_gold_coarse
   else
     prompt_type_id=0  # Set prompt_type_id to an empty string if use_prompt is not True
-          python -m llava.serve.cli \
-            --model-path liuhaotian/llava-v1.5-7b \
-            --data_dir /home/jk100/data/data/inaturalist \
-            --data_path $DATA_PATH \
-            --image-file None \
-            --task_type_id $task_type_id \
-            --use_gold_coarse \
-            --load-8bit
+    python -m llava.serve.cli \
+      --model-path liuhaotian/llava-v1.5-13b \
+      --data_dir /home/jk100/data/data/inaturalist \
+      --data_path $DATA_PATH \
+      --image-file None \
+      --task_type_id $task_type_id \
+      --use_gold_coarse
   fi
 
 # If it's not for prompting, it's for generating attributes per concept
@@ -62,8 +59,8 @@ elif [ "$task_type_id" = 3 ]; then
     echo "Use Wikipedia documents as input for attribute extraction? [y/n] >> "
     read use_wiki
   fi
-  if [ "$use_wiki" = "no" ]; then
-	python -m llava.serve.cli \
+  if [ "$use_wiki" = "n" ]; then
+	  python -m llava.serve.cli \
           --model-path $model_path \
           --data_dir /home/jk100/data/data/inaturalist \
           --data_path $DATA_PATH \
@@ -73,12 +70,12 @@ elif [ "$task_type_id" = 3 ]; then
           --modality $modality \
           --model $model \
           --ctgr2img-path $CTGR2IMG_PATH \
-          --max-new-tokens 256 \
+          --max-new-tokens 256
           # --parse_attr
           # --load-8bit
           # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
   else
-	python -m llava.serve.cli \
+	  python -m llava.serve.cli \
           --model-path $model_path \
           --data_dir /home/jk100/data/data/inaturalist \
           --data_path $DATA_PATH \
@@ -90,6 +87,7 @@ elif [ "$task_type_id" = 3 ]; then
           --ctgr2img-path $CTGR2IMG_PATH \
           --max-new-tokens 256 \
           --use_wiki
+          # --parse_attr
           # --load-8bit
           # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
   fi

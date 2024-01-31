@@ -1,16 +1,90 @@
+# iNaturalist
 high_coarse = '''
 What is the name of the organism that appears in this image? \
-Provide your answer after "Answer:" from one of the four categories: {birds, mammals, insects, reptiles, amphibians}.
+Provide your answer after "Answer:" from one of the following categories: ['Arachnids', 'Mammals', 'Reptiles', 'Animalia', 'Mollusks', 'Plants', 'Amphibians', 'Ray-finned Fishes', 'Birds', 'Insects', 'Fungi'].
 '''
 
 coarse = '''
 What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a bengal tiger, give a coarse-grained label for the image 'Tiger'.
 Provide your answer after "Answer:".
 '''
 
 fine = '''
 What is the name of the {concept_placeholder} that appears in this image? \
-Provide your answer after "Answer:" and make sure to follow the binomial nomenclature format (e.g., genus-species).
+For example, if it's a picture of a bengal tiger, give a fine-grained label for the image 'Bengal Tiger' or use its binomial nomenclature 'Panthera tigris tigris'.
+Provide your answer after "Answer:".
+'''
+
+# FGVC-Aircraft
+high_coarse_fgvc_aircraft = '''
+What is the name of the object that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Airplane', 'Car', 'Train', 'Bicycle', 'Cell Phone', 'Plants', 'Dogs', 'Birds', 'Trucks'].
+'''
+ 
+coarse_fgvc_aircraft = '''
+What is the manufacturer of the {concept_placeholder} that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Embraer', 'Lockheed Corporation', 'Douglas Aircraft Company', 'Cirrus Aircraft', 'Airbus', 'Antonov', 'de Havilland', 'Eurofighter', 'Cessna', 'Tupolev', 'Dornier', 'Yakovlev', 'Panavia', 'Robin', 'ATR', 'Beechcraft', 'Dassault Aviation', 'Fairchild', 'McDonnell Douglas', 'Fokker', 'Gulfstream Aerospace', 'Boeing', 'Saab', 'Canadair', 'Lockheed Martin', 'Supermarine', 'Ilyushin', 'British Aerospace', 'Piper', 'Bombardier Aerospace'].
+'''
+
+fine_fgvc_aircraft = '''
+What is the name of the airplane model made by {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Boeing 787 Dreamliner, give a fine-grained label for the image 'Boeing 787 Dreamliner'.
+Provide your answer after "Answer:".
+'''
+
+# CUB-200-2011
+high_coarse_cub_200_2011 = '''
+What is the name of the organism that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Arachnids', 'Mammals', 'Reptiles', 'Animalia', 'Mollusks', 'Plants', 'Amphibians', 'Ray-finned Fishes', 'Birds', 'Insects', 'Fungi'].
+'''
+ 
+coarse_cub_200_2011 = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Owl Parrot, give a coarse-grained label for the image 'Parrot'.
+Provide your answer after "Answer:".
+'''
+
+fine_cub_200_2011 = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Owl Parrot, give a fine-grained label for the image 'Owl Parrot'.
+Provide your answer after "Answer:".
+'''
+
+# Stanford Dogs
+high_coarse_stanford_dogs = '''
+What is the name of the organism that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Arachnids', 'Dogs', 'Reptiles', 'Mollusks', 'Plants', 'Amphibians', 'Ray-finned Fishes', 'Birds', 'Insects', 'Fungi'].
+'''
+ 
+coarse_stanford_dogs = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Golden Retriever, give a coarse-grained label for the image 'Retriever'.
+Provide your answer after "Answer:".
+'''
+
+fine_stanford_dogs = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Golden Retriever, give a coarse-grained label for the image 'Golden Retriever'.
+Provide your answer after "Answer:".
+'''
+
+# NAbirds
+high_coarse_nabirds = '''
+What is the name of the organism that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Arachnids', 'Mammals', 'Reptiles', 'Animalia', 'Mollusks', 'Plants', 'Amphibians', 'Ray-finned Fishes', 'Birds', 'Insects', 'Fungi'].
+'''
+ 
+coarse_nabirds = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Owl Parrot, give a coarse-grained label for the image 'Parrot'.
+Provide your answer after "Answer:".
+'''
+
+fine_nabirds = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a Owl Parrot, give a fine-grained label for the image 'Owl Parrot'.
+Provide your answer after "Answer:".
 '''
 
 # Multi-turn dialogue for attribute extraction & concept classification
@@ -138,6 +212,23 @@ PROMPT_DICT = {}
 PROMPT_DICT['high_coarse'] = high_coarse.strip()
 PROMPT_DICT['coarse'] = coarse.strip()
 PROMPT_DICT['fine'] = fine.strip()
+
+PROMPT_DICT['high_coarse_fgvc_aircraft'] = high_coarse_fgvc_aircraft.strip()
+PROMPT_DICT['coarse_fgvc_aircraft'] = coarse_fgvc_aircraft.strip()
+PROMPT_DICT['fine_fgvc_aircraft'] = fine_fgvc_aircraft.strip()
+
+PROMPT_DICT['high_coarse_cub_200_2011'] = high_coarse_cub_200_2011.strip()
+PROMPT_DICT['coarse_cub_200_2011'] = coarse_cub_200_2011.strip()
+PROMPT_DICT['fine_cub_200_2011'] = fine_cub_200_2011.strip()
+
+PROMPT_DICT['high_coarse_stanford_dogs'] = high_coarse_stanford_dogs.strip()
+PROMPT_DICT['coarse_stanford_dogs'] = coarse_stanford_dogs.strip()
+PROMPT_DICT['fine_stanford_dogs'] = fine_stanford_dogs.strip()
+
+PROMPT_DICT['high_coarse_nabirds'] = high_coarse_nabirds.strip()
+PROMPT_DICT['coarse_nabirds'] = coarse_nabirds.strip()
+PROMPT_DICT['fine_nabirds'] = fine_nabirds.strip()
+
 PROMPT_DICT['attr_seek'] = attr_seek.strip()
 PROMPT_DICT['attr_seek_coarse'] = attr_seek_coarse.strip()
 PROMPT_DICT['attr_seek_fine'] = attr_seek_fine.strip()
