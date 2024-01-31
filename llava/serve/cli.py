@@ -16,6 +16,7 @@ import requests
 import os
 import json
 import time
+import random
 from dotenv import load_dotenv  
 
 from PIL import Image
@@ -28,37 +29,6 @@ from prompts import PROMPT_DICT
 from openai import OpenAI
 
 
-'''
-from openai import OpenAI
-
-client = OpenAI(
-    # This is the default and can be omitted
-    api_key=os.environ.get("OPENAI_API_KEY"),
-)
-
-response = client.chat.completions.create(
-  model="gpt-4-vision-preview",
-  messages=[
-    {
-      "role": "user",
-      "content": [
-        {"type": "text", "text": "What's in this image?"},
-        {
-          "type": "image_url",
-          "image_url": {
-            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",
-          },
-        },
-      ],
-    }
-  ],
-  max_tokens=300,
-)
-
-print(response.choices[0])
-'''
-
-
 def load_image(image_file):
     if image_file.startswith('http://') or image_file.startswith('https://'):
         response = requests.get(image_file)
@@ -67,33 +37,6 @@ def load_image(image_file):
         image = Image.open(image_file).convert('RGB')
     return image
 
-
-def openai_gpt_call(client, system_prompt, user_prompt, model, image_path=None, max_tokens=256, temp=0.0):
-
-    if image_path is not None:
-        base64_image = encode_image(image_path)  # base64-encoded image
-        user_content = [
-            {"type": "text", "text": user_prompt},
-            {"type": "image_url", "image_url": {
-                "url": f"data:image/jpeg;base64,{base64_image}"
-            }
-            },
-        ]
-    else:
-        user_content = [
-            {"type": "text", "text": user_prompt},
-        ]
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_content},
-    ]
-    response = client.chat.completions.create(
-        model=model, 
-        messages=messages,
-        max_tokens=max_tokens,
-        temperature=temp
-    )
-    return response, response.choices[0]
 
 def openai_gpt_call(client, system_prompt, user_prompt, 
                     model, image_path=None, max_tokens=256, 
@@ -130,8 +73,26 @@ def openai_gpt_call(client, system_prompt, user_prompt,
 
         except Exception as e:
             # Handle specific exceptions if needed
-            print(f"An error occurred: {e}")
+            if "content_policy_violation" in e.message:
+                # Note, this format may change due to OpenAI's API update
+                '''
 
+                [ GPT-4 raw_response sample 
+                ] 
+                "gpt4_raw_response": {"id": "chatcmpl-8ee6lDVpdQ8xt5JdWKjv0wBNl4XXY",
+                  "choices": [{"finish_reason": "stop", "index": 0, 
+                  "message": {"content": "Required:\n- elongated, slender body\n- smooth, shiny skin\n- lack of limbs\n- visible segmentation along the body\n\nLikely:\n- burrowing in soil\n- found in moist environments\n- presence of a prostomium (a lip-like extension over the mouth)", 
+                  "role": "assistant", "function_call": null, "tool_calls": null}}], "created": 1704697987, "model": "gpt-4-1106-vision-preview", "object": "chat.completion", "system_fingerprint": null, "usage": {"completion_tokens": 58, "prompt_tokens": 454, "total_tokens": 512}}
+                
+                '''
+                raw_response = {"id": "-1",
+                                "choices": [{"finish_reason": "error", "index": 0, 
+                                             "message": {"content": "None"}}],
+                                "role": "assistant",
+                                "function_call": None,
+                                "tool_calls": None}
+                return raw_response, raw_response["choices"][0]
+            
         retry_count += 1
         if retry_count >= max_retries:
             raise Exception("Maximum number of retries reached. API call failed.")
@@ -152,8 +113,10 @@ def main(args):
     data_split = None  # or "train"
     if args.data_path in ["train.json", "val.json"]:
         data_split = args.data_path.split(".")[0]
-    elif "_" in args.data_path:
+    elif "_" in args.data_path:  # e.g., "val_noplant_64.json"
         data_split = args.data_path.split("_")[0]
+    elif "unified-" in args.data_path: # e.g., "unified-fgvc-aircraft-test-combined.jsonl"
+        data_split = args.data_path.split("-")[-2]
     else:
         raise Exception(f"args.data_path format is incorrect : [{args.data_path}]")
 
@@ -167,6 +130,8 @@ def main(args):
             load_dotenv()  # Load environment variables from .env file
             api_key = os.getenv("OPENAI_API_KEY")  # Access the API key using the variable name defined in the .env file
             client = OpenAI(api_key=api_key)
+
+        print(f"==========[ Loading {model_name} ] ==========")
 
         if 'llama-2' in model_name.lower():
             conv_mode = "llava_llama_2"
@@ -202,15 +167,34 @@ def main(args):
         prompt_type_id = args.prompt_type_id
 
         task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
-        out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_name}_output.jsonl"
+        dataset_name = args.data_dir.split('/')[-1]
+
+        if dataset_name == "fgvc-aircraft-2013b":
+            dataset_name = "fgvc_aircraft"
+        elif dataset_name == "CUB_200_2011":
+            dataset_name = "cub_200_2011"
+        elif dataset_name == "stanford_dogs":
+            dataset_name = "stanford_dogs"
+        elif dataset_name == "nabirds":
+            dataset_name = "nabirds"
+        # elif dataset_name == "stanford_cars":  # TODO: Construct 'unified-...' first
+        #     dataset_name = "stanford_cars"
+        
+        out_path = f"{dataset_name}_{task_name}_{model_name}_output.jsonl"
+        out_dir = f"../preds/{dataset_name}_outputs"
+
+        if not os.path.isdir(out_dir):
+            os.mkdir(out_dir)
         
         if task_types[task_type_id] == "attr_gen":
             if args.modality == "text":
-                out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_{args.input_type}_{args.model}_output.jsonl"
+                out_path = f"{dataset_name}_attr_gen_{args.modality}_{args.input_type}_{args.model}_output.jsonl"
             else:  # args.modality == "image"
-                out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_{args.model}_output.jsonl"
+                out_path = f"{dataset_name}_attr_gen_{args.modality}_{args.model}_output.jsonl"
+
             if args.use_wiki:
-                out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_wiki_{args.modality}_{args.model}_output.jsonl"
+                # Using Wikipedia document as input for attribute generation
+                out_path = f"{dataset_name}_attr_gen_wiki_{args.modality}_{args.model}_output.jsonl"
                 cached_wiki_attr_dicts = []
                 cached_wiki_docs_path = os.path.join("../preds", "parsed-llava-7b-text-queried-wiki-out.json")
                 if os.path.exists(cached_wiki_docs_path):
@@ -219,65 +203,81 @@ def main(args):
                             d = json.loads(d)
                             cached_wiki_attr_dicts.append(d)
         
-            # If `out_path` exists, load it up and count the number of idx it should start from!
-            stopped_idx = 0
-            if os.path.exists(out_path):
-                print("Out_path already exists in [ {out_path} ]. Reading the file ...")
-                with open(out_path, "r") as reader_obj:
-                    lines = reader_obj.readlines()
-                    out_preds = [json.loads(l) for l in lines]
-                    stopped_idx = len(out_preds)
-
-        user_prompt = PROMPT_DICT[task_name]
+        # If `out_path` exists, load it up and count the number of idx it should start from!
+        out_path = os.path.join(out_dir, out_path)
+        stopped_idx = 0
+        if os.path.exists(out_path):
+            print(f"[ OUT_PATH already exists in [ {out_path} ]. Reading the file ... ]")
+            with open(out_path, "r") as reader_obj:
+                lines = reader_obj.readlines()
+                out_preds = [json.loads(l) for l in lines]
+                stopped_idx = len(out_preds)
 
         if prompt_types[prompt_type_id] == "attr_seek":
             args.dialogue_mode = 'multi'
 
-        if task_type_id in [1, 2, 3]:  # Inject higher-level granularity output into finer-level granularity input
-            if args.use_gold_coarse and task_type_id == 2:
-                # Use the GPT-3.5-turbo generated Coarse-grained labels (treat them as gold)
-                coarse_lbl_dir = args.coarse_lbl_dir
-                coarse_lbl_file = args.coarse_lbl_file
-                with open(os.path.join(coarse_lbl_dir, coarse_lbl_file), "r") as fp:
-                    coarse_out_dict = json.load(fp)
-                    fp.close()
-            elif task_type_id in [1,2]:
-                # Use the LLaVA-predicted Coarse-grained outputs
-                coarse_out_path = f"../preds/{args.data_dir.split('/')[-1]}_{task_types[task_type_id - 1]}_output.json"
-                with open(coarse_out_path, "r") as fp:
-                    coarse_out_dict = json.load(fp)
-                    fp.close()
-            
-            placeholder_str = "{concept_placeholder}"
+        ''' Load the dataset'''
 
         # Load the original iNaturalist dataset
         path = os.path.join(args.data_dir, args.data_path)
-        print(f"Loading dataset from [ {path} ]")
-        with open(os.path.join(args.data_dir, args.data_path), "r") as fp:
-            dataset = json.load(fp)  # dataset.keys() - dict_keys(['info', 'images', 'categories', 'annotations', 'licenses'])
-            fp.close()
+        print(f"[ DATASET: Loading dataset from [ {path} ] ]")
 
-        data_iter = dataset['annotations']
-        
-        if task_type_id == 3:
-            print("(demo) dataset.keys() : ", dataset.keys())
-            print("categories (len) : ", len(dataset['categories']))
-            print("categories (sample) : ", dataset['categories'][0])
+        if dataset_name == 'inaturalist':
+            with open(os.path.join(args.data_dir, args.data_path), "r") as fp:
+                dataset = json.load(fp)  # dataset.keys() - dict_keys(['info', 'images', 'categories', 'annotations', 'licenses'])
+                data_iter = dataset['annotations']
+        else:
+            with jsonlines.open(os.path.join(args.data_dir, args.data_path), "r") as fp:
+                data_iter = [d for d in fp]
+                print("Coarse-lbl stats: ", set([d['coarse-level-lbl'][0] for d in data_iter]))
+                print("Coarse-lbl stats (length): ", len(set([d['coarse-level-lbl'][0] for d in data_iter])))
+
+
+        if task_type_id in [1, 2, 3]:  # Inject higher-level granularity output into finer-level granularity input
+            if args.use_gold_coarse:
+                # Use the GPT-4V generated Coarse-grained labels (treat them as gold)
+                if task_type_id == 1: # coarse (gold basic)
+                    if dataset_name == 'inaturalist':
+                        coarse_out_dict = {str(idx): dataset['categories'][data['category_id']]['supercategory'] for idx, data in enumerate(data_iter)}
+                    else:
+                        coarse_out_dict = {str(data['idx']): data['basic-level-lbl'] for data in data_iter}
+                elif task_type_id == 2:  # fine (gold coarse)
+                    if dataset_name == 'inaturalist':
+                        coarse_lbl_file = os.path.join(args.coarse_lbl_dir, dataset_name, args.coarse_lbl_file)
+                        coarse_out_dict = {}
+                        with open(coarse_lbl_file, "r") as fp:
+                            coarse_family_dict = json.load(fp)
+                        for idx, data in enumerate(data_iter):
+                            cid = data['category_id']
+                            family_name = dataset['categories'][cid]['family']
+                            coarse_out_dict[str(idx)] = coarse_family_dict[family_name][0]
+                    else:
+                        coarse_out_dict = {str(data['idx']): data['coarse-level-lbl'] for data in data_iter}
+
+            elif task_type_id in [1,2]:
+                # Use the LLaVA-predicted Coarse-grained outputs
+                coarse_out_path = f"{dataset_name}_{task_types[task_type_id - 1]}_output.jsonl"
+                coarse_out_path = os.path.join(out_dir, coarse_out_path)
+                with open(coarse_out_path, "r") as fp:
+                    coarse_out_dict = json.load(fp)
+
+        print(f"[ OUT_PATH: {out_path} ")
+
+        if task_types[task_type_id] == "attr_gen":
             data_iter = dataset['categories']
-            # Load the dataset['categories'] to actual image files mapped dict
-            ctgr2img_path = os.path.join(args.data_dir, args.ctgr2img_path)
+            ctgr2img_path = os.path.join(args.data_dir, args.ctgr2img_path) # Load the dataset['categories'] to actual image files mapped dict
             if os.path.exists(ctgr2img_path):
                 with open(ctgr2img_path, "r") as reader_obj:
                     ctgr2img_dict = json.load(reader_obj)
         
         print("dataset (length) : ", len(data_iter))
 
-        setting_desc_text = f"[ Model: {args.model_path} ]_[ Task: {task_types[task_type_id]} | {args.modality} | {args.input_type} ] "
+        placeholder_str = '{concept_placeholder}'
+
+        setting_desc_text = f"[ Model: {model_name} ]_[ Task: {task_types[task_type_id]} | {dataset_name} | {args.modality} | {args.input_type} ] "
 
         if stopped_idx < len(data_iter):  # Terminate if the generated file already exists
             
-            setting_desc_text = f"[ Model: {args.model_path} ]_[ Task: {task_types[task_type_id]} | {args.modality} | {args.input_type} ] "
-
             with jsonlines.open(out_path, mode='a') as writer_obj:
 
                 for idx, data in enumerate(tqdm(data_iter, desc=setting_desc_text.strip())):
@@ -285,18 +285,30 @@ def main(args):
                         continue
 
                     if task_type_id < 3:
-                        img_dict = dataset['images'][idx]
+                        if dataset_name == 'inaturalist':
+                            img_dict = dataset['images'][idx]
 
                         # For the "coarse" and "fine" cases, 
                         # inject the previous output into the current prompt (or gold if --use_gold_coarse)
-                        user_prompt = PROMPT_DICT[task_name]
-                        user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
-                        
+                        if dataset_name == 'inaturalist':
+                            user_prompt = PROMPT_DICT[task_name]
+                        else:
+                            user_prompt = PROMPT_DICT[task_name + f"_{dataset_name}"]
+
+                        if task_type_id in [1,2]:
+                            coarse_lbl = coarse_out_dict[str(idx)]
+                            if type(coarse_out_dict[str(idx)]) == list and len(coarse_out_dict) > 0:
+                                coarse_lbl = random.choice(coarse_out_dict[str(idx)])
+                            user_prompt = user_prompt.replace(placeholder_str, remove_ans_prefix(coarse_lbl, prefix="Answer:"))
+
                         if prompt_types[prompt_type_id] == "attr_seek":
                             aseek_init_prompt = PROMPT_DICT[prompt_types[prompt_type_id]]
                             aseek_init_prompt = aseek_init_prompt.replace(placeholder_str, remove_ans_prefix(coarse_out_dict[str(idx)], prefix="Answer:"))
 
-                        image_path = os.path.join(args.data_dir, img_dict['file_name'])
+                        if dataset_name == 'inaturalist':
+                            image_path = os.path.join(args.data_dir, img_dict['file_name'])
+                        else:
+                            image_path = data['img_path']
                         image = load_image(image_path)
                         image_tensor = process_images([image], image_processor, args)  # Similar operation in model_worker.py
 
@@ -310,18 +322,18 @@ def main(args):
                     elif task_type_id == 3 and args.modality == "image":
                         
                         user_prompt = PROMPT_DICT[task_name + "_" + args.modality]  # "attr_gen_image"
-                        user_prompt = user_prompt.replace(placeholder_str, data['supercategory'])
+                        user_prompt = user_prompt.replace(placeholder_str, data['supercategory'])  # e.g., Insects, Birds, Animalia, Mollusks
 
                         image_path = os.path.join(args.data_dir, data_split, data['image_dir_name'], ctgr2img_dict[data['image_dir_name']][0])
-                        image = load_image(image_path)
-                        image_tensor = process_images([image], image_processor, args)  # Similar operation in model_worker.py
 
-                        # print(f"====== idx: {idx} | image_tensor (shape) : {image_tensor.shape} ======")
-                        if type(image_tensor) is list:
-                            image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
-                        else:
-                            image_tensor = image_tensor.to(model.device, dtype=torch.float16)
-
+                        if "gpt-4" not in args.model_path:
+                            image = load_image(image_path)
+                            image_tensor = process_images([image], image_processor, args)  # Similar operation in model_worker.py
+                            if type(image_tensor) is list:
+                                image_tensor = [image.to(model.device, dtype=torch.float16) for image in image_tensor]
+                            else:
+                                image_tensor = image_tensor.to(model.device, dtype=torch.float16)
+                            # print(f"====== idx: {idx} | image_tensor (shape) : {image_tensor.shape} ======")
 
                     elif task_type_id == 3 and args.modality == "text":
                         # For the "attr_gen" & "modality == text" case, 
@@ -337,11 +349,11 @@ def main(args):
                     
                     inp = user_prompt
 
-                    # print("PRED OUTPUT :: ", coarse_out_dict[str(idx)])
-                    # print(f"USER_PROMPT : {user_prompt}")
                     # if prompt_types[prompt_type_id] == "attr_seek":
                     #     print(f"ATTR_SEEK_PROMPT : {aseek_init_prompt}")
-                    # # exit()
+
+                    # print(f"USER_PROMPT : {user_prompt}")
+                    # print(f"IMG_PATH : {image_path}")
 
                     if args.dialogue_mode == 'multi' and prompt_types[prompt_type_id] == "attr_seek":
 
@@ -378,11 +390,11 @@ def main(args):
                         conv.append_message(conv.roles[0], user_prompt)
                         conv.append_message(conv.roles[1], None)
 
-                        # print("****ATTRIBUTE_SEEK_PROMPT (INTERM.) >> ", conv.get_prompt())
-
                     elif args.dialogue_mode == 'single':  # Single-turn case
                         if task_type_id == 3 and args.modality == "text":
                             pass  # No image token needed - Text-only attr_gen case
+                        elif "gpt-4" in args.model:
+                            pass
                         else:
                             if model.config.mm_use_im_start_end:
                                 inp = DEFAULT_IM_START_TOKEN + DEFAULT_IMAGE_TOKEN + DEFAULT_IM_END_TOKEN + '\n' + inp
@@ -391,8 +403,8 @@ def main(args):
                         conv.append_message(conv.roles[0], inp)
                         conv.append_message(conv.roles[1], None)
 
-                    # if (idx + 1) % 1 == 0:
-                    #     print(f" >> conv.get_prompt() : {conv.get_prompt()}\n")
+                    if idx == 0:
+                        print(f" >> conv.get_prompt() : {conv.get_prompt()}\n")
                         
                     if "gpt-4" not in args.model:
                         prompt = conv.get_prompt()
@@ -439,8 +451,10 @@ def main(args):
                         temp = args.temperature
                         image_path = image_path if args.modality == "image" else None
                         raw_response, response = openai_gpt_call(client, system_prompt, user_prompt, model_name, image_path, max_tokens, temp)
-                        response_dict = response.dict()
-                        out_dict = {"idx": idx, "text": response_dict['message']['content'].strip(), "gpt4_raw_response": raw_response.dict()}
+                        response_dict = response.dict() if type(response) != dict else response
+                        out_dict = {"idx": idx, 
+                                    "text": response_dict['message']['content'].strip(), 
+                                    "gpt4_raw_response": raw_response.dict() if type(response) != dict else raw_response}
 
                     if (idx + 1) % 100 == 0:
                         print(f"======== SAMPLE_IDX {idx+1} ========")
@@ -455,15 +469,15 @@ def main(args):
                     if args.debug:
                         print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
             
-        else:  # If the file generated file already exists
+        else:  # If the generated file already exists
             # Use `extract_attributes(text)` to post-process the generated attributes
             # And save them in the same format Ansel sent me
             print(f"[ {out_path} ] already exists! ")
             if task_types[task_type_id] == "attr_gen":
 
-                if args.modality == "text":
-                    binomial_out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_binomial_{args.model}_output.jsonl"
-                    common_out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_common_{args.model}_output.jsonl"
+                if not args.use_wiki and args.modality == "text":
+                    binomial_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_binomial_{args.model}_output.jsonl"
+                    common_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_common_{args.model}_output.jsonl"
                     
                     with open(binomial_out_path, "r") as bin_reader:
                         lines = bin_reader.readlines()
@@ -475,29 +489,35 @@ def main(args):
                         common_out_dicts = [json.loads(l) for l in lines]
                         com_reader.close()
 
-                    if len(binomial_out_dicts) != len(common_out_dicts):
-                        min_idx = min(len(binomial_out_dicts), len(common_out_dicts))
-
-                else:  # args.modality == "image"
-                    img_out_path = f"../preds/{args.data_dir.split('/')[-1]}_attr_gen_{args.modality}_{args.model}_output.jsonl"
-                    with open(img_out_path, "r") as img_reader:
-                        lines = img_reader.readlines()
-                        img_out_dicts = [json.loads(l) for l in lines]
-                        img_reader.close()
+                else:  # args.modality == "image" OR args.use_wiki == True
+                    if args.use_wiki:
+                        attr_out_path = f"../preds/{dataset_name}_attr_gen_wiki_{args.modality}_{args.model}_output.jsonl"
+                        args.modality = f"wiki-{args.modality}"
+                    else:  # args.modality == "image"
+                        attr_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_{args.model}_output.jsonl"
+                    print(f"[ Loading from {attr_out_path} ...]")
+                    with open(attr_out_path, "r") as attr_reader:
+                        lines = attr_reader.readlines()
+                        attr_out_dicts = [json.loads(l) for l in lines]
+                        attr_reader.close()
                     
-                parsed_out_path = f"parsed-{args.model}-{args.modality}-combined.json"
+                parsed_out_path = f"../preds/parsed-{args.model}-{args.modality}-combined.json"
                 parsed_outputs = []
 
                 print("Parsing generate attributes ...")
                 for idx, data in enumerate(tqdm(dataset['categories'])):
-                    if args.modality == "text" and len(binomial_out_dicts) != len(common_out_dicts):  # FIXME: Hacky fix - GPT-4 may have stopped in the middle
-                        if idx == min_idx:
+                    if args.modality == "text" and len(attr_out_dicts) != len(dataset['categories']):  # FIXME: Hacky fix - GPT-4 may have stopped in the middle
+                        if idx == min(len(binomial_out_dicts), len(common_out_dicts)):
                             break
-                    if args.modality == "text":
+                    elif args.modality == "image" and len(attr_out_dicts) != len(dataset['categories']):  # FIXME: Hacky fix - GPT-4 may have stopped in the middle
+                        if idx < min(len(attr_out_dicts), len(dataset['categories'])):
+                            continue
+                        
+                    if not args.use_wiki and args.modality == "text":
                         bin_required_attr, bin_likely_attr = extract_attributes(binomial_out_dicts[idx]['text'])
                         com_required_attr, com_likely_attr = extract_attributes(common_out_dicts[idx]['text'])
                     else:
-                        bin_required_attr, bin_likely_attr = extract_attributes(img_out_dicts[idx]['text'])
+                        bin_required_attr, bin_likely_attr = extract_attributes(attr_out_dicts[idx]['text'])
                         com_required_attr, com_likely_attr = [], []
                     # print(" == binomial original == \n", binomial_out_dicts[idx]['text'])
                     # print("\n\n == common original == \n", common_out_dicts[idx]['text'])
@@ -515,7 +535,7 @@ def main(args):
                                 }
                     parsed_outputs.append(parsed_attr)
 
-                with open(os.path.join("../preds", parsed_out_path), "w") as parse_writer:
+                with open(parsed_out_path, "w") as parse_writer:
                     json.dump(parsed_outputs, parse_writer)
 
 
@@ -585,9 +605,9 @@ if __name__ == "__main__":
     parser.add_argument("--image-file", type=str, required=True)
 
     parser.add_argument("--data_dir", type=str, default=None)
-    parser.add_argument("--data_path", type=str, default="val_noplant_64.json")
-    parser.add_argument("--coarse_lbl_dir", type=str, default= "/home/jk100/code/ecole/gpt_output")
-    parser.add_argument("--coarse_lbl_file", type=str, default="coarse_grained_lbls_gpt4_val_noplant64.json")
+    parser.add_argument("--data_path", type=str, default="val.json")
+    parser.add_argument("--coarse_lbl_dir", type=str, default= "/shared/nas/data/m1/jk100/data")
+    parser.add_argument("--coarse_lbl_file", type=str, default="coarse-classes-family.json")
     parser.add_argument("--preds_dir", type=str, default="")
     parser.add_argument("--ctgr2img-path", type=str, default="ctgr2img_dict.json")
 
