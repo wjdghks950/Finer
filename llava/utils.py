@@ -241,7 +241,7 @@ def openai_gpt_call(client, system_prompt, user_prompt,
 
             # If response is successful, break the loop
             if response:
-                return response, response.choices[0].message.content
+                return response, response.choices[0]
 
         except Exception as e:
             # Handle specific exceptions if needed
@@ -264,7 +264,7 @@ def openai_gpt_call(client, system_prompt, user_prompt,
                                 "function_call": None,
                                 "tool_calls": None}
                 return raw_response, raw_response["choices"][0]
-
+            
         retry_count += 1
         if retry_count >= max_retries:
             raise Exception("Maximum number of retries reached. API call failed.")
