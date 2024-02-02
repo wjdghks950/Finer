@@ -4,8 +4,8 @@ import torch
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
-from llava.utils import disable_torch_init, encode_image, extract_attributes
-from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria
+from llava.utils import disable_torch_init, encode_image, extract_attributes, openai_gpt_call, preprocess_gpt_output
+from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria, load_image
 from llava.eval.eval_inaturalist import remove_ans_prefix
 
 from PIL import Image
@@ -29,81 +29,9 @@ from prompts import PROMPT_DICT
 from openai import OpenAI
 
 
-def load_image(image_file):
-    if image_file.startswith('http://') or image_file.startswith('https://'):
-        response = requests.get(image_file)
-        image = Image.open(BytesIO(response.content)).convert('RGB')
-    else:
-        image = Image.open(image_file).convert('RGB')
-    return image
 
-
-def openai_gpt_call(client, system_prompt, user_prompt, 
-                    model, image_path=None, max_tokens=256, 
-                    temp=0.0, max_retries=5, retry_delay=2):
-    retry_count = 0
-    while True:
-        try:
-            if image_path is not None:
-                base64_image = encode_image(image_path)  # base64-encoded image
-                user_content = [
-                    {"type": "text", "text": user_prompt},
-                    {"type": "image_url", "image_url": {
-                        "url": f"data:image/jpeg;base64,{base64_image}"
-                    }}
-                ]
-            else:
-                user_content = [{"type": "text", "text": user_prompt}]
-
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content}
-            ]
-
-            response = client.chat.completions.create(
-                model=model, 
-                messages=messages,
-                max_tokens=max_tokens,
-                temperature=temp
-            )
-
-            # If response is successful, break the loop
-            if response:
-                return response, response.choices[0]
-
-        except Exception as e:
-            # Handle specific exceptions if needed
-            if "content_policy_violation" in e.message:
-                # Note, this format may change due to OpenAI's API update
-                '''
-
-                [ GPT-4 raw_response sample 
-                ] 
-                "gpt4_raw_response": {"id": "chatcmpl-8ee6lDVpdQ8xt5JdWKjv0wBNl4XXY",
-                  "choices": [{"finish_reason": "stop", "index": 0, 
-                  "message": {"content": "Required:\n- elongated, slender body\n- smooth, shiny skin\n- lack of limbs\n- visible segmentation along the body\n\nLikely:\n- burrowing in soil\n- found in moist environments\n- presence of a prostomium (a lip-like extension over the mouth)", 
-                  "role": "assistant", "function_call": null, "tool_calls": null}}], "created": 1704697987, "model": "gpt-4-1106-vision-preview", "object": "chat.completion", "system_fingerprint": null, "usage": {"completion_tokens": 58, "prompt_tokens": 454, "total_tokens": 512}}
-                
-                '''
-                raw_response = {"id": "-1",
-                                "choices": [{"finish_reason": "error", "index": 0, 
-                                             "message": {"content": "None"}}],
-                                "role": "assistant",
-                                "function_call": None,
-                                "tool_calls": None}
-                return raw_response, raw_response["choices"][0]
-            
-        retry_count += 1
-        if retry_count >= max_retries:
-            raise Exception("Maximum number of retries reached. API call failed.")
-
-        time.sleep(retry_delay)
-
-
-def preprocess_gpt_output(response, start_str="Answer:"):
-    answer_start_idx = response.find(start_str) + len(start_str) if response.find(start_str) != -1 else 0
-    prepro_response = response[answer_start_idx:]
-    return prepro_response 
+# TODO: Combine the run_cli_<dataset_name>.sh scripts 
+# TODO: Implement the attribute -> concept accuracy experiment (Jiateng's suggestion)
 
 
 def main(args):
