@@ -208,6 +208,22 @@ In the required (Required:) set, do not include relative attributes like size or
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
 '''
 
+knowledge_probe_inaturalist = '''
+Can you guess the specific name (specific epithet) of an organism in the following taxonomic category given its physical attributes?
+Provide your answer after "Specific Epithet:".
+
+Physical Attributes: {attribute_placeholder}
+
+Supercategory: {supercategory_placeholder}
+Kingdom: {kingdom_placeholder}
+Phylum: {phylum_placeholder}
+Class: {class_placeholder}
+Order: {order_placeholder}
+Family: {family_placeholder}
+Genus: {genus_placeholder}
+Specific Epithet: 
+'''
+
 PROMPT_DICT = {}
 PROMPT_DICT['high_coarse'] = high_coarse.strip()
 PROMPT_DICT['coarse'] = coarse.strip()
@@ -237,3 +253,5 @@ PROMPT_DICT['cot_0shot_fine'] = cot_0shot_fine.strip()
 PROMPT_DICT['attr_gen'] = attr_gen.strip()
 PROMPT_DICT['attr_gen_image'] = attr_gen_image.strip()
 PROMPT_DICT['attr_gen_wiki'] = attr_gen_wiki.strip()
+
+PROMPT_DICT['knowledge_probe_inaturalist'] = knowledge_probe_inaturalist.strip()
