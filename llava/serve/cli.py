@@ -388,12 +388,15 @@ def main(args):
                     if args.debug:
                         print("\n", {"prompt": prompt, "outputs": outputs}, "\n")
             
-        elif task_types[task_type_id] == "attr_gen":  
+        elif task_types[task_type_id] == "attr_gen":  # Generating attributes for data
             # If the generated file already exists
             # Use `extract_attributes(text)` to post-process the generated attributes
             # And save them in the same format Ansel sent me
             print(f"[ {out_path} ] already exists! ")
             if task_types[task_type_id] == "attr_gen":
+
+                # TODO: Fix to incorporate other datasets - currently, it's all for 'inaturalist'
+                # TODO: ['inaturalist', 'cub_200_2011', 'fgvc_aircraft', 'nabirds', 'stanford_dogs', 'stanford_cars']
 
                 if not args.use_wiki and args.modality == "text":
                     binomial_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_binomial_{args.model_path}_output.jsonl"

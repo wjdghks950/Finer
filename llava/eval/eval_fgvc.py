@@ -134,9 +134,14 @@ if __name__ == '__main__':
     pred_dict = {task_type: [] for task_type in task_types}
     for tidx, pred_path in pred_paths:
         task_type = task_types[tidx]
-        with jsonlines.open(os.path.join(pred_dir, pred_path), "r") as reader:
-            pred_dict[task_type] = [line for line in reader]
-            print(f"({pred_path}) => LENGTH: ", len(pred_dict[task_type]))
+        try:
+            with jsonlines.open(os.path.join(pred_dir, pred_path), "r") as reader:
+                pred_dict[task_type] = [line for line in reader]
+                print(f"({pred_path}) => LENGTH: ", len(pred_dict[task_type]))
+        except FileNotFoundError as e:
+            print(f"FileNotFoundError: {e}")
+            print(f"[ Skipping : {pred_path} ]")
+            pred_dict[task_type] = [{"idx": 0, "text": ""}]
 
     score_dict = {task_type: {'em': [], 'f1': []} for task_type in task_types}
 

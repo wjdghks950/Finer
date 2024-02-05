@@ -963,8 +963,8 @@ class Cars(VisionDataset):
             print(f"[ self.coarse_classes : {self.coarse_classes[:10]}]")
         
         loaded_mat = loaded_mat['annotations'][0]
-        print("=== self.coarse_classes ===\n", self.coarse_classes)
-        print("\n=== loaded_mat (class_names) ===\n", self.fine_classes)
+        print(f"=== self.coarse_classes === (# classes: {len(set(self.coarse_classes))})\n{self.coarse_classes}")
+        print(f"\n=== loaded_mat (class_names) ===(# classes: {len(set(self.fine_classes))})\n{self.fine_classes}")
 
         self.samples = []
         for i, item in enumerate(loaded_mat):
@@ -972,6 +972,7 @@ class Cars(VisionDataset):
             path = str(item[0][0]).replace("car_ims", img_dir)  # Assign cars_test, cars_train dir
             label = int(item[-2][0]) - 1
             self.samples.append((path, label))
+            # TODO: Image path does not exist
             print(os.path.exists(os.path.join(self.root, path)))
             print(os.path.join(self.root, path))
             print(path)

@@ -31,7 +31,7 @@ elif [ "$model_name" = "instructblip-7b" ]; then
 elif [ "$model_name" = "instructblip-13b" ]; then
 	model_name_var="instructblip-13b" # model_name_var="blip2_vicuna_instruct_vicuna7b"
 elif [ "$model_name" = "gpt-4" ]; then
-	model_name_var="gpt-4"
+	model_name_var="gpt-4-vision-preview"
 fi
 
 echo "use_prompt [true/false] >> "
