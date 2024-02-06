@@ -132,6 +132,7 @@ class LlavaMetaForCausalLM(ABC):
                 cur_image_idx += 1
                 continue
             image_token_indices = torch.where(cur_input_ids == IMAGE_TOKEN_INDEX)[0]
+            print(f"[ image_token_indices : {image_token_indices} ]")
 
             cur_new_input_embeds = []
             if labels is not None:

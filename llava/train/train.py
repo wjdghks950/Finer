@@ -668,10 +668,16 @@ class LazySupervisedDataset(Dataset):
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
         if 'image' in sources[0]:
             image_file = self.list_data_dict[i]['image']
-            image_folder = self.data_args.image_folder if not "/shared/nas/data/m1" in image_file else ""
-            print("image_folder: ", image_folder)
+            # Handle the wrong image_folder path
+            if not "/shared/nas/data/m1/jk100/data" in image_file:
+                image_folder = self.data_args.image_folder
+            else:
+                image_folder = "/home/zixuan11/zixuan11/jk100/data"
+                image_file = image_file.replace("/shared/nas/data/m1/jk100/data/", "")
+            image_path = os.path.join(image_folder, image_file)
+
             processor = self.data_args.image_processor
-            image = Image.open(os.path.join(image_folder, image_file)).convert('RGB')
+            image = Image.open(image_path).convert('RGB')
             if self.data_args.image_aspect_ratio == 'pad':
                 def expand2square(pil_img, background_color):
                     width, height = pil_img.size
