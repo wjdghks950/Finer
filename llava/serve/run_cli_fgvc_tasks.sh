@@ -88,7 +88,7 @@ elif [ "$task_type_id" = 3 ]; then
     read input_type
   else
     echo "Input type is empty!"
-    input_type="null"
+    input_type="binomial"  # Default setting
   fi
 
   if [ "$use_wiki" = "n" ]; then

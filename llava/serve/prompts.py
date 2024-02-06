@@ -180,7 +180,7 @@ Likely:
 - long tail
 - stout teeth
 
-In the required (Required:) set, do not include relative, non-visual attributes like size or weight. \
+In the required (Required:) set, do not include relative, non-visual attributes like size or weight, only the external, visually distinguishable attributes. \
 If no document is given, generate from what you already know about {concept_placeholder}.
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
 '''
