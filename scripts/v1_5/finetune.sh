@@ -1,7 +1,7 @@
 #!/bin/bash
 
-deepspeed --include localhost:2,3 ../../llava/train/train_mem.py \
-    --deepspeed ../zero3.json\
+deepspeed --include localhost:2 ../../llava/train/train_mem.py \
+    --deepspeed ../zero3_offload.json\
     --model_name_or_path lmsys/vicuna-7b-v1.5 \
     --version v1 \
     --data_path ../../playground/data/llava_v1_5_mix865k_inat2021.json \
