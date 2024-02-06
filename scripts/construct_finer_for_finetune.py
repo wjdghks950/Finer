@@ -85,7 +85,7 @@ def convert_to_llava_mix_format(train_dataset, dataset_name=None, root_dir=None,
                     },
                     {
                         "from": "human",
-                        "value": f"<image>\n{input_styles[1]}"
+                        "value": f"{input_styles[1]}"
                     },
                     {
                         "from": "gpt",
@@ -93,7 +93,7 @@ def convert_to_llava_mix_format(train_dataset, dataset_name=None, root_dir=None,
                     },
                     {
                         "from": "human",
-                        "value": f"<image>\n{input_styles[2]}"
+                        "value": f"{input_styles[2]}"
                     },
                     {
                         "from": "gpt",
