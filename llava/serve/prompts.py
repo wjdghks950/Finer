@@ -162,7 +162,7 @@ Provide your response in the above format, saying nothing else. If there are no 
 
 # Prompt to extract descriptive, physical attributes that pertain to the organism's Wikipedia page
 attr_gen_wiki ='''
-What are useful visual features for distinguishing {concept_placeholder} in a photo? \
+What are useful visual, external features for distinguishing {concept_placeholder} in a photo? \
 Given an input document (Document:) that may talk about {concept_placeholder}, provide the answer as lists of required and likely attributes. \
 For example, for a bengal tiger (Felis Tigris) you might say:
 
@@ -180,6 +180,8 @@ Likely:
 - long tail
 - stout teeth
 
+'Required' attributes are a set of external, physical attributes that allows a human to distinguish it from other similar looking concepts.
+'Likely' attributes are a set of attributes that may or may not be visible or are not one of the most discriminative features of the concept.
 In the required (Required:) set, do not include relative, non-visual attributes like size or weight, only the external, visually distinguishable attributes. \
 If no document is given, generate from what you already know about {concept_placeholder}.
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
