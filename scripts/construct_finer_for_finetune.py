@@ -71,7 +71,8 @@ def convert_to_llava_mix_format(train_dataset, dataset_name=None, root_dir=None,
                     print("INPUT: ", input_styles[i])
                     print("OUTPUT: ", output_styles[i])
 
-            obj_dict = {
+            obj_dict = {  # TODO: Try difference mixtures for fine-tuning (effectiveness of FINER dataset)
+                # TODO: 1) What is this? (basic / coarse prediction) -> 2) Attribute prediction -> 3) Fine-grained concept prediction
                 "id": img_idx,
                 "image": os.path.join(root_dir, img_path),
                 "conversations":[
