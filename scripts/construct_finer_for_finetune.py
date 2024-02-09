@@ -28,13 +28,17 @@ def convert_to_llava_mix_format(train_dataset, dataset_name=None, root_dir=None,
 
     if dataset_name == 'inaturalist':
  
-        out_path = 'llava_v1_5_mix865k_inat2021.json'
+        # TODO: mixture_type - attr_pred
+        # TODO: Try difference mixtures for fine-tuning (effectiveness of FINER dataset)
+        # TODO: 1) What is this? (basic / coarse prediction) -> 2) Attribute prediction -> 3) Fine-grained concept prediction
+        mixture_type = "attr_pred"
+        out_path = f'llava_v1_5_mix865k_{mixture_type}_inat2021.json'
 
         if os.path.exists(os.path.join(out_data_dir, out_path)):
             print(f"[ {os.path.join(out_data_dir, out_path)} already exists. ]")
             with open(os.path.join(out_data_dir, out_path), "r") as reader:
                 inat_200k_dataset = json.load(reader)
-            return inat_200k_dataset
+            return inat_200k_datase
 
         max_k_supercategory = 20000
         max_conv_len = 3
