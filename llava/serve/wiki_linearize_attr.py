@@ -29,17 +29,18 @@ from llava.utils import remove_text_after_triple_newline
 '''
 
 
-def linearize_attr(concept_name, attr_list):
+def linearize_attr(concept_name, attr_list, include_concept_name=True):
     '''
     # Demo case
     s = ["red/orange color", "iridescent reflections", "elongated, cylindrical shape", "segmented body", "presence of setae (bristles) on body"]
     linearize_attr(s)
     '''
+    linear_attr_str = ""
     if len(attr_list) >= 1:
-        linear_attr_str = f"{concept_name} exhibits "
-        linear_attr_str += ", ".join(attr_list)
-    else:
-        linear_attr_str = ""  # No extracted attribute case
+        if include_concept_name:
+            linear_attr_str = f"{concept_name} exhibits "
+        else:
+            linear_attr_str += ", ".join(attr_list)
     return linear_attr_str
 
 
