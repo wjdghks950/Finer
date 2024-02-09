@@ -326,7 +326,7 @@ if __name__ == "__main__":
         else:
             concept_wiki_path = "parsed-" + "-".join(combined_path.split("-")[1:4]) + "-queried-wiki-out.json"
     else:
-        concept_wiki_path = "parsed-" + "gpt-4-" + f"{dataset_name}" + "-queried-wiki-out.json"
+        concept_wiki_path = "parsed-" + f"{dataset_name}" + "-queried-wiki-out.json"
     print(f"OUT_PATH - concept_wiki_path : [{concept_wiki_path}]")
 
     # Retrieve Wikipedia documents and save them along with the linearized attributes text
