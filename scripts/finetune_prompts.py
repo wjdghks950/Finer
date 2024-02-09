@@ -44,4 +44,9 @@ output_clf_style = [
     "A {concept_placeholder} is shown in this image."
 ]
 
+# TODO: (i) Attribute generation per image input (ii) Generate the end concept with the attributes generated
+
+linearized_attributes_style = []  # TODO
+
+
 input_attr_clf_style = "Judging by the {attributes} in the concept, it's a {concept_placeholder}"
