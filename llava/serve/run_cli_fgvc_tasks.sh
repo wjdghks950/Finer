@@ -12,7 +12,7 @@ echo "model_name ['llava-7b', 'llava-13b', 'instructblip-7b', 'instructblip-13b'
 read model_name
 
 if [ "$dataset" = "inaturalist" ]; then
-	dataset_name="inaturalist"
+  dataset_name="inaturalist"
   DATA_PATH="val.json"
 elif [ "$dataset" = "cub_200_2011" ]; then
 	dataset_name="CUB_200_2011"
@@ -80,18 +80,17 @@ if [[ "$task_type_id" == "0" || "$task_type_id" == "1" || "$task_type_id" == "2"
 
 # If it's not for prompting, it's for generating attributes per concept
 elif [ "$task_type_id" = 3 ]; then
-  echo "Running generating attribute..."
-  echo "Use text or image [text/image] ? >> "
-  read modality
-  if [ "$modality" = "text" ]; then
+  echo "Generating attributes..."
+  if [[ "$modality" = "text" && "$dataset" = "inaturalist" ]]; then
     echo "Use binomial or common_name [binomial/common] ? >> "
     read input_type
   else
-    echo "Input type is empty!"
-    input_type="binomial"  # Default setting
+    input_type="common"
   fi
 
   if [ "$use_wiki" = "n" ]; then
+    echo "Use text or image [text/image] ? >> "
+    read modality
 	  python -m llava.serve.cli \
           --model-path $model_path \
           --data_dir /home/jk100/data/data/$dataset_name \
@@ -113,7 +112,6 @@ elif [ "$task_type_id" = 3 ]; then
           --image-file None \
           --task_type_id $task_type_id \
           --input_type $input_type \
-          --modality $modality \
           --ctgr2img-path $CTGR2IMG_PATH \
           --max-new-tokens 256 \
           --use_wiki

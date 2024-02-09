@@ -56,8 +56,8 @@ def f1_score(prediction, ground_truth):
     return f1, precision, recall
 
 
-def exact_match_score(prediction, ground_truth):
-    if normalize_answer(ground_truth) in " ".join(normalize_answer(prediction).split()[:20]):
+def exact_match_score(prediction, ground_truth, max_tok_cnt=20):
+    if normalize_answer(ground_truth) in " ".join(normalize_answer(prediction).split()[:max_tok_cnt]):
         # Modified EM - if the ground_truth is within the first 20 generated words, give it 1.0
         return 1.0
     else:

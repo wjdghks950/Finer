@@ -91,20 +91,21 @@ def main(args):
 
         task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
         dataset_name = args.data_dir.split('/')[-1]
-
-        if dataset_name == "fgvc-aircraft-2013b":
-            dataset_name = "fgvc_aircraft"
+        if dataset_name == "inaturalist":
+            dataset_txt = "inaturalist"
+        elif dataset_name ==  "fgvc-aircraft-2013b":
+            dataset_txt = "fgvc_aircraft"
         elif dataset_name == "CUB_200_2011":
-            dataset_name = "cub_200_2011"
+            dataset_txt = "cub_200_2011"
         elif dataset_name == "stanford_dogs":
-            dataset_name = "stanford_dogs"
+            dataset_txt = "stanford_dogs"
         elif dataset_name == "nabirds":
-            dataset_name = "nabirds"
+            dataset_txt = "nabirds"
         elif dataset_name == "stanford_cars":  # TODO: Construct 'unified-...' first
-            dataset_name = "stanford_cars"
+            dataset_txt = "stanford_cars"
         
-        out_path = f"{dataset_name}_{task_name}_{model_name}_output.jsonl"
-        out_dir = f"../preds/{dataset_name}_outputs"
+        out_path = f"{dataset_txt}_{task_name}_{model_name}_output.jsonl"
+        out_dir = f"../preds/{dataset_txt}_outputs"
 
         if not os.path.isdir(out_dir):
             os.mkdir(out_dir)
@@ -117,24 +118,16 @@ def main(args):
 
             if args.use_wiki:
                 # Using Wikipedia document as input for attribute generation
+                out_dir = f"../preds/parsed_{dataset_name}_outputs"
                 out_path = f"{dataset_name}_attr_gen_wiki_{args.modality}_{args.model_path}_output.jsonl"
                 cached_wiki_attr_dicts = []
-                cached_wiki_docs_path = os.path.join("../preds", "parsed-llava-7b-text-queried-wiki-out.json")
+                if dataset_name == "inaturalist":
+                    cached_wiki_docs_path = os.path.join(out_dir, "parsed-llava-7b-text-queried-wiki-out.json")
+                else:
+                    cached_wiki_docs_path = os.path.join(out_dir, f"parsed-{dataset_name}-queried-wiki-out.jsonl")
                 if os.path.exists(cached_wiki_docs_path):
-                    with open(cached_wiki_docs_path, "r") as cached_reader:
-                        for d in tqdm(cached_reader, desc=f"Loading cached Wikipedia documents for use [{cached_wiki_docs_path}]"):
-                            d = json.loads(d)
-                            cached_wiki_attr_dicts.append(d)
-        
-        # If `out_path` exists, load it up and count the number of idx it should start from!
-        out_path = os.path.join(out_dir, out_path)
-        stopped_idx = 0
-        if os.path.exists(out_path):
-            print(f"[ OUT_PATH already exists in [ {out_path} ]. Reading the file ... ]")
-            with open(out_path, "r") as reader_obj:
-                lines = reader_obj.readlines()
-                out_preds = [json.loads(l) for l in lines]
-                stopped_idx = len(out_preds)
+                    with jsonlines.open(cached_wiki_docs_path, "r") as cached_reader:
+                        cached_wiki_attr_dicts = [d for d in cached_reader]
 
         if prompt_types[prompt_type_id] == "attr_seek":
             args.dialogue_mode = 'multi'
@@ -185,11 +178,27 @@ def main(args):
         print(f"[ OUT_PATH: {out_path} ")
 
         if task_types[task_type_id] == "attr_gen":
-            data_iter = dataset['categories']
-            ctgr2img_path = os.path.join(args.data_dir, args.ctgr2img_path) # Load the dataset['categories'] to actual image files mapped dict
-            if os.path.exists(ctgr2img_path):
-                with open(ctgr2img_path, "r") as reader_obj:
-                    ctgr2img_dict = json.load(reader_obj)
+            if dataset_name == 'inaturalist':
+                data_iter = dataset['categories']
+                ctgr2img_path = os.path.join(args.data_dir, args.ctgr2img_path) # Load the dataset['categories'] to actual image files mapped dict
+                if os.path.exists(ctgr2img_path):
+                    with open(ctgr2img_path, "r") as reader_obj:
+                        ctgr2img_dict = json.load(reader_obj)
+            else:  # For datasets other than 'inaturalist'
+                data_iter = cached_wiki_attr_dicts
+
+        # If `out_path` exists, load it up and count the number of idx it should start from!
+        out_path = os.path.join(out_dir, out_path)
+        stopped_idx = 0
+        if os.path.exists(out_path):
+            print(f"[ OUT_PATH already exists in [ {out_path} ]. Reading the file ... ]")
+            with open(out_path, "r") as reader_obj:
+                lines = reader_obj.readlines()
+                out_preds = [json.loads(l) for l in lines]
+                stopped_idx = len(out_preds)
+
+        # TODO: Use the 'cached_wiki_attr_dicts' for GPT-4 generated physical attributes!
+        # TODO: Implement for other datasets!
         
         print("dataset (length) : ", len(data_iter))
 
@@ -244,13 +253,13 @@ def main(args):
 
                     elif task_type_id == 3 and args.modality == "text":
                         # For the "attr_gen" & "modality == text" case, 
-                        # simply replace the user_prompt with binomial nomenclature (or common name)
+                        # simply replace the user_prompt with the concept name
                         if args.use_wiki:
                             user_prompt = PROMPT_DICT[task_name + "_wiki"]
                         else:
                             user_prompt = PROMPT_DICT[task_name]
-                        binomial_name = data['name']
-                        common_name = data['common_name']
+                        binomial_name = data['name'] if dataset_name == 'inaturalist' else ""
+                        common_name = data['common_name'] if dataset_name == 'inaturalist' else data['query']
                         user_prompt = user_prompt.replace(placeholder_str, binomial_name) if args.input_type == "binomial" \
                                         else user_prompt.replace(placeholder_str, common_name)
                     
@@ -329,7 +338,8 @@ def main(args):
                         system_prompt = conv.system
                         user_prompt = inp
                         if args.use_wiki:
-                            user_prompt += "Document: " + cached_wiki_attr_dicts[idx]['binomial_wiki_doc']
+                            user_prompt += "Document: " + cached_wiki_attr_dicts[idx]['binomial_wiki_doc'] if dataset_name == "inaturalist" \
+                                    else "Document: " + cached_wiki_attr_dicts[idx]['common_wiki_doc']
 
                     # In `single` turn, empty conv after one turn
                     if args.dialogue_mode == 'single':
@@ -397,7 +407,7 @@ def main(args):
 
                 # TODO: Fix to incorporate other datasets - currently, it's all for 'inaturalist'
                 # TODO: ['inaturalist', 'cub_200_2011', 'fgvc_aircraft', 'nabirds', 'stanford_dogs', 'stanford_cars']
-
+    
                 if not args.use_wiki and args.modality == "text":
                     binomial_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_binomial_{args.model_path}_output.jsonl"
                     common_out_path = f"../preds/{dataset_name}_attr_gen_{args.modality}_common_{args.model_path}_output.jsonl"
@@ -413,6 +423,9 @@ def main(args):
                         com_reader.close()
 
                 else:  # args.modality == "image" OR args.use_wiki == True
+                    
+                    # TODO: Error in loading 'attr_out_path' - FIXME: Refactor the code to incorporate other datasets
+
                     if args.use_wiki:
                         attr_out_path = f"../preds/{dataset_name}_attr_gen_wiki_{args.modality}_{args.model_path}_output.jsonl"
                         args.modality = f"wiki-{args.modality}"
