@@ -814,7 +814,8 @@ class Dogs(VisionDataset):
             print('[ Loading coarse-grained labels for Stanford Dogs... ]')
             df = pd.read_csv(os.path.join(self.root, coarse_class_path), names=['raw_line'])
             self.coarse_classes = df['raw_line'].apply(lambda x: ' '.join(x.split(' ')[1:])).tolist()
-            print(f"[ self.coarse_classes : {self.coarse_classes[:10]}]")
+            print(f"[ self.coarse_classes : {self.coarse_classes}]")
+            print(f"[ self.coarse_classes (class #) : {len(set(self.coarse_classes))}]")
 
     def __len__(self):
         return len(self._flat_breed_images)
@@ -1250,7 +1251,7 @@ class Cub2011(VisionDataset):
 
         # print("[ self.fine_classes ]\n")
         # print(self.fine_classes)
-        # print("\n\n[ self.coarse_classes ]\n")
+        # print(f"\n\n[ self.coarse_classes (class cnt: {len(set(self.coarse_classes))}) ]\n")
         # print(self.coarse_classes)
     
         assert len(self.fine_classes) == len(self.coarse_classes)
