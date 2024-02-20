@@ -668,12 +668,13 @@ class LazySupervisedDataset(Dataset):
         assert len(sources) == 1, "Don't know why it is wrapped to a list"  # FIXME
         if 'image' in sources[0]:
             image_file = self.list_data_dict[i]['image']
-            # Handle the wrong image_folder path
+            # FIXME: Handle the wrong image_folder path
             if not "/shared/nas/data/m1/jk100/data" in image_file:
                 image_folder = self.data_args.image_folder
             else:
-                image_folder = "/home/zixuan11/zixuan11/jk100/data"
-                image_file = image_file.replace("/shared/nas/data/m1/jk100/data/", "")
+                # image_folder = "/home/zixuan11/zixuan11/jk100/data"  # TODO: For valdi path
+                # image_file = image_file.replace("/shared/nas/data/m1/jk100/data/", "")
+                image_folder = ""
             image_path = os.path.join(image_folder, image_file)
 
             processor = self.data_args.image_processor

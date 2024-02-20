@@ -44,9 +44,61 @@ output_clf_style = [
     "A {concept_placeholder} is shown in this image."
 ]
 
-# TODO: (i) Attribute generation per image input (ii) Generate the end concept with the attributes generated
+# (i) Attribute generation per image input (ii) Generate the end concept with the attributes generated
+attr_gen_input_styles = [
+    "What kind of external descriptive attributes do you see from the {concept_placeholder} in this image?",
+    "From the {concept_placeholder}, describe the discriminative, physical characteristics you see.",
+    "Can you identify and describe the external features visible on the {concept_placeholder} in this picture?",
+    "Observe the {concept_placeholder} and detail the unique, physical traits you notice.",
+    "What observable qualities can you point out about the {concept_placeholder} in this image?",
+    "In this image, what are the notable exterior aspects of the {concept_placeholder}?",
+    "Please describe the visible characteristics that stand out for the {concept_placeholder} here.",
+    "Examine the {concept_placeholder} and comment on its distinctive physical features.",
+    "What external attributes of the {concept_placeholder} in the image catch your attention?",
+    "Identify and elaborate on the physical qualities of the {concept_placeholder} seen in this picture.",
+    "Regarding the {concept_placeholder}, what discernible features can you describe from this image?",
+    "What are the standout external features you notice on the {concept_placeholder} depicted here?",
+    "Can you detail the observable physical characteristics of the {concept_placeholder} in this photograph?",
+    "In this depiction, what distinct external traits of the {concept_placeholder} can you identify?",
+    "Describe the noticeable, physical attributes of the {concept_placeholder} in this visual representation."
+]
 
-linearized_attributes_style = []  # TODO
+attr_gen_output_styles = [
+    "The {concept_placeholder} in the image exhibits {attribute_placeholder}.",
+    "I can see that the {concept_placeholder} has {attribute_placeholder}.",
+    "The {concept_placeholder} shown displays {attribute_placeholder}.",
+    "It's evident that the {concept_placeholder} possesses {attribute_placeholder}.",
+    "One can observe that the {concept_placeholder} features {attribute_placeholder}.",
+    "The {concept_placeholder} in this depiction is characterized by {attribute_placeholder}.",
+    "Noticeably, the {concept_placeholder} holds {attribute_placeholder}.",
+    "The {concept_placeholder} here presents with {attribute_placeholder}.",
+    "In this representation, the {concept_placeholder} clearly has {attribute_placeholder}.",
+    "It appears that the {concept_placeholder} is endowed with {attribute_placeholder}.",
+    "You can discern that the {concept_placeholder} includes {attribute_placeholder}.",
+    "This particular {concept_placeholder} is marked by {attribute_placeholder}.",
+    "The {concept_placeholder} is visibly equipped with {attribute_placeholder}.",
+    "In the image, the {concept_placeholder} evidently has {attribute_placeholder}.",
+    "It's clear that the {concept_placeholder} in the picture has {attribute_placeholder}."
+]
+
+attr_gen_interm_styles = [
+    "Now, what is the specific name of the {concept_placeholder} considering their physical attributes?",
+    "Given the set of attributes, tell me the specific name of the {concept_placeholder}.",
+    "What is the exact name of the {concept_placeholder} now that you have identified their physical characteristics?",
+    "Can you identify the {concept_placeholder} by its physical features and provide its specific name?",
+    "What specific name is given to the {concept_placeholder} based on its physical attributes?",
+    "Now that you're aware of their physical traits, what is the {concept_placeholder}'s precise name?",
+    "Considering their physical characteristics, what is the {concept_placeholder} specifically called?",
+    "After noting the physical attributes, could you specify the name of the {concept_placeholder}?",
+    "What exact name corresponds to the {concept_placeholder} in light of their physical traits?",
+    "Identify the specific name of the {concept_placeholder} given its physical features.",
+    "Based on the physical characteristics, what is the exact designation of the {concept_placeholder}?",
+    "Can you determine the precise name of the {concept_placeholder} from its physical attributes?",
+    "What is the detailed name of the {concept_placeholder} based on their physical description?",
+    "With the physical attributes outlined, what is the {concept_placeholder}'s specific nomenclature?",
+    "Given the physical characteristics you've noted, what is the specific name of the {concept_placeholder}?",
+    "Name the {concept_placeholder} specifically, based on the physical traits you have identified."
+]
 
 
 input_attr_clf_style = "Judging by the {attributes} in the concept, it's a {concept_placeholder}"

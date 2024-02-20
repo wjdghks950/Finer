@@ -1,10 +1,10 @@
 #!/bin/bash
 
-deepspeed --include localhost:2 ../../llava/train/train_mem.py \
-    --deepspeed ../zero3_offload.json\
+deepspeed --include localhost:1,2,3,4 ../../llava/train/train_mem.py \
+    --deepspeed ../zero3.json\
     --model_name_or_path lmsys/vicuna-7b-v1.5 \
     --version v1 \
-    --data_path ../../playground/data/llava_v1_5_mix865k_inat2021.json \
+    --data_path ../../playground/data/llava_v1_5_mix865k_attr_gen_fine_answer_inaturalist \
     --image_folder ../../playground/data \
     --vision_tower openai/clip-vit-large-patch14-336 \
     --pretrain_mm_mlp_adapter ../../checkpoints/llava-v1.5-mlp2x-336px-pretrain-vicuna-7b-v1.5/mm_projector.bin \
@@ -15,11 +15,11 @@ deepspeed --include localhost:2 ../../llava/train/train_mem.py \
     --image_aspect_ratio pad \
     --group_by_modality_length True \
     --bf16 True \
-    --output_dir ../../checkpoints/llava-v1.5-7b-865k-inat2021 \
+    --output_dir ../../checkpoints/llava-v1.5-7b-865k-inat2021-attr_gen_fine_answer \
     --num_train_epochs 1 \
-    --per_device_train_batch_size 1 \
-    --per_device_eval_batch_size 1 \
-    --gradient_accumulation_steps 16 \
+    --per_device_train_batch_size 16 \
+    --per_device_eval_batch_size 4 \
+    --gradient_accumulation_steps 1 \
     --evaluation_strategy "no" \
     --save_strategy "steps" \
     --save_steps 50000 \

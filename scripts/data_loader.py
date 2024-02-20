@@ -334,8 +334,6 @@ def unify_data_format(fine_train_dataset, fine_test_dataset,
         if not os.path.exists(test_out_path):
             with jsonlines.open(test_out_path, "a") as writer:
                 for idx, (img_path, tgt) in enumerate(tqdm(fine_test_dataset, desc='[ Unifying Stanford Cars (test) ]')):
-                    print("IMG_PATH / TARGET : ", img_path, " || ", tgt)  # TODO: Image alignment is wrong ... maybe a wrong dataset?
-                    exit()
                     obj_dict = {'idx': idx, 
                                 'basic-level-lbl': "Car", 
                                 'coarse-level-lbl': [coarse_classes[tgt]],
@@ -899,10 +897,25 @@ class Cars(VisionDataset):
     }
 
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
+        try:
+            import scipy.io as sio
+        except ImportError:
+            raise RuntimeError("Scipy is not found. This dataset needs to have scipy installed: pip install scipy")
+        
         super(Cars, self).__init__(root, transform=transform, target_transform=target_transform)
 
         self.loader = default_loader
-        self.train = train
+        self._split = "train" if train else "test"
+
+        self.root = root
+        devkit = os.path.join(self.root, "devkit")
+
+        if self._split == "train":
+            self._annotations_mat_path = os.path.join(devkit, "cars_train_annos.mat")
+            self._images_base_path = os.path.join(self.root, "cars_train")
+        else:
+            self._annotations_mat_path = os.path.join(self.root, "cars_test_annos_withlabels.mat")
+            self._images_base_path = os.path.join(self.root, "cars_test")
 
         if self._check_exists():
             print('Files already downloaded and verified.')
@@ -911,12 +924,19 @@ class Cars(VisionDataset):
         else:
             raise RuntimeError(
                 'Dataset not found. You can use download=True to download it.')
+        
+        self.samples = [
+            (
+                str(os.path.join(self._images_base_path, annotation['fname'])),
+                annotation['class'] - 1,   # Original target mapping starts from 1, hence -1
+            )
+            for annotation in sio.loadmat(self._annotations_mat_path, squeeze_me=True)['annotations']
+        ]
 
-        # 'loaded_mat' - keys(): ['annotations', 'class_names']
-        loaded_mat = scipy.io.loadmat(os.path.join(self.root, self.file_list['annos'][1]))
+        self.fine_classes = sio.loadmat(os.path.join(devkit, "cars_meta.mat"), squeeze_me=True)["class_names"].tolist()
+        self.class_to_idx = {cls: i for i, cls in enumerate(self.fine_classes)}
 
         coarse_categories = ["sedan", "SUV", "coupe", "convertible", "pickup", "hatchback", "van"]
-        self.fine_classes = [cname[0] for cname in loaded_mat['class_names'][0]]
         self.coarse_classes = []
         coarse_class_path = "coarse-classes.txt"
 
@@ -963,23 +983,18 @@ class Cars(VisionDataset):
             self.coarse_classes = df['raw_line'].apply(lambda x: ' '.join(x.split(' ')[1:])).tolist()
             print(f"[ self.coarse_classes : {self.coarse_classes[:10]}]")
         
-        loaded_mat = loaded_mat['annotations'][0]
-        print(f"=== self.coarse_classes === (# classes: {len(set(self.coarse_classes))})\n{self.coarse_classes}")
-        print(f"\n=== loaded_mat (class_names) ===(# classes: {len(set(self.fine_classes))})\n{self.fine_classes}")
+        # print(f"=== self.coarse_classes === (# classes: {len(set(self.coarse_classes))})\n{self.coarse_classes}")
+        # print(f"\n\n=== self.fine_classes ===(# classes: {len(set(self.fine_classes))})\n{self.fine_classes}")
+        # assert len(self.coarse_classes) == len(self.fine_classes)
 
-        self.samples = []
-        for i, item in enumerate(loaded_mat):
-            img_dir = "cars_train" if self.train != bool(item[-1][0]) else "cars_test"
-            path = str(item[0][0]).replace("car_ims", img_dir)  # Assign cars_test, cars_train dir
-            label = int(item[-2][0]) - 1
-            self.samples.append((path, label))
-            # TODO: Image path does not exist
-            print(os.path.exists(os.path.join(self.root, path)))
-            print(os.path.join(self.root, path))
-            print(path)
-            print(self.samples)
-            print("_"*20)
-            exit()
+        print(f"=== [ Split: {self._split} ] ===")
+        print("self.samples (length): ", len(self.samples))
+        print("self.samples (sample): ", self.samples[:5])
+        print("self.fine_classes (sample 0): ", self.fine_classes[self.samples[0][1]])
+        print("self.coarse_classes(sample 0): ", self.coarse_classes[self.samples[0][1]])
+        print("-"*30)
+        print("self.fine_classes (sample 1): ", self.fine_classes[self.samples[1][1]])
+        print("self.coarse_classes(sample 1): ", self.coarse_classes[self.samples[1][1]])
 
     def __getitem__(self, index):
         path, target = self.samples[index]
