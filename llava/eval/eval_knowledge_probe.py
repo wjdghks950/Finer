@@ -6,7 +6,6 @@ from llava.conversation import conv_templates, SeparatorStyle
 from llava.model.builder import load_pretrained_model
 from llava.utils import disable_torch_init, encode_image, extract_attributes, openai_gpt_call, preprocess_gpt_output
 from llava.mm_utils import process_images, tokenizer_image_token, get_model_name_from_path, KeywordsStoppingCriteria, load_image
-from llava.eval.eval_fgvc import remove_ans_prefix
 from llava.serve.prompts import PROMPT_DICT
 from llava.eval.eval_fgvc import eval, remove_ans_prefix, annotation_loader
 
@@ -24,13 +23,6 @@ from transformers import TextStreamer
 
 # OpenAI query module
 from openai import OpenAI
-
-
-'''
-# TODO: Implement the attribute -> concept accuracy experiment (Jiateng's suggestion)
-# TODO: Input: {family_name} + prompt + attributes
-# TODO: Output: fine-grained concept (name, binomial)
-'''
 
 
 def main(args):
@@ -83,21 +75,22 @@ def main(args):
     # iNaturalist dataset inference
     if os.path.isdir(data_dir) is not None:
         if dataset_name == "inaturalist":
-            dataset_name = "inaturalist"
+            dataset_txt = "inaturalist"
         elif dataset_name == "fgvc-aircraft-2013b":
-            dataset_name = "fgvc_aircraft"
+            dataset_txt = "fgvc_aircraft"
         elif dataset_name == "CUB_200_2011":
-            dataset_name = "cub_200_2011"
+            dataset_txt = "cub_200_2011"
         elif dataset_name == "stanford_dogs":
-            dataset_name = "stanford_dogs"
+            dataset_txt = "stanford_dogs"
         elif dataset_name == "nabirds":
-            dataset_name = "nabirds"
+            dataset_txt = "nabirds"
         # elif dataset_name == "stanford_cars":  # TODO: Construct 'unified-...' first
-        #     dataset_name = "stanford_cars"
+        #     dataset_txt = "stanford_cars"
+        #     annot_path = "unified-stanford-cars-test-combined.jsonl"
 
-    task_type = f"knowledge_probe_{dataset_name}"
-    out_path = f"knowledge_probe_{dataset_name}_{model_name}_output.jsonl"
-    out_dir = f"../preds/{dataset_name}_outputs"
+    task_type = f"knowledge_probe_{dataset_txt}"
+    out_path = f"knowledge_probe_{dataset_txt}_{model_name}_output.jsonl"
+    out_dir = f"../preds/{dataset_txt}_outputs"
 
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
@@ -121,7 +114,7 @@ def main(args):
     path = os.path.join(data_dir, args.data_path)
     print(f"[ DATASET: Loading dataset from [ {path} ] ]")
 
-    if dataset_name == 'inaturalist':
+    if dataset_txt == 'inaturalist':
         coarse_family_path = os.path.join(data_dir, "coarse-classes-family.json")
         # Load 'inaturalist' dataset
         with open(path, "r") as fp:
@@ -138,7 +131,12 @@ def main(args):
         with jsonlines.open(path, "r") as fp:
             data_iter = [d for d in fp]
 
-    print("dataset (length) : ", len(data_iter))
+        # Load the parsed, gpt-4 extracted attributes from the dataset
+        attr_path = os.path.join(args.preds_dir, f"parsed_{dataset_name}_outputs", f"parsed-{dataset_name}-gpt-4-vision-preview-wiki-text-combined.json")
+        with open(attr_path, "r") as fp:
+            attr_dict = json.load(fp)
+        # Construct fine-grained label to class-idx dict
+        fine2cidx = {d['name']: d['id']for d in attr_dict}
 
     setting_desc_text = f"[ Knowledge Probing - Model: {model_name} ]_[ Task: {task_type} | {dataset_name} ] "
 
@@ -152,17 +150,17 @@ def main(args):
                     continue
 
                 placeholder_str = '{concept_placeholder}'
+                supercategory_placeholder_str = '{supercategory_placeholder}'
+                attr_placeholder_str = '{attribute_placeholder}'
 
                 user_prompt = PROMPT_DICT[task_type]
-                if dataset_name == 'inaturalist':
-                    supercategory_placeholder_str = '{supercategory_placeholder}'
+                if dataset_txt == 'inaturalist':
                     kingdom_placeholder_str = '{kingdom_placeholder}'
                     phylum_placeholder_str = '{phylum_placeholder}'
                     class_placeholder_str = '{class_placeholder}'
                     order_placeholder_str = '{order_placeholder}'
                     family_placeholder_str = '{family_placeholder}'
                     genus_placeholder_str = '{genus_placeholder}'
-                    attr_placeholder_str = '{attribute_placeholder}'
                     concept_dict = dataset['categories'][data['category_id']]
                     
                     family_name = concept_dict['family']
@@ -175,8 +173,28 @@ def main(args):
                     user_prompt = user_prompt.replace(family_placeholder_str, concept_dict['family'])
                     user_prompt = user_prompt.replace(genus_placeholder_str, concept_dict['genus'])
                     user_prompt = user_prompt.replace(attr_placeholder_str, gold_attributes)
-                elif dataset_name == "fgvc_aircraft":
-                    pass
+
+                elif dataset_txt == "fgvc_aircraft":
+                    coarse_placeholder_str = '{coarse_placeholder}'
+                    user_prompt = user_prompt.replace(supercategory_placeholder_str, data['basic-level-lbl'])
+                    user_prompt = user_prompt.replace(coarse_placeholder_str, random.choice(data['coarse-level-lbl']))
+                    attributes = []
+                    for fine_lbl in data['fine-level-lbl']:
+                        cidx = fine2cidx[fine_lbl]
+                        attributes.extend(attr_dict[cidx]['attr_binomial']['required'])
+                    filtered_attributes = [a for a in attributes if a != "none"]
+                    user_prompt = user_prompt.replace(attr_placeholder_str, "; ".join(filtered_attributes))
+
+                elif dataset_txt == "stanford_dogs":
+                    coarse_placeholder_str = '{coarse_placeholder}'
+                    user_prompt = user_prompt.replace(supercategory_placeholder_str, data['basic-level-lbl'])
+                    user_prompt = user_prompt.replace(coarse_placeholder_str, random.choice(data['coarse-level-lbl']))
+                    attributes = []
+                    for fine_lbl in data['fine-level-lbl']:
+                        cidx = fine2cidx[fine_lbl]
+                        attributes.extend(attr_dict[cidx]['attr_binomial']['required'])
+                    filtered_attributes = [a for a in attributes if a != "none"]
+                    user_prompt = user_prompt.replace(attr_placeholder_str, "; ".join(filtered_attributes))
 
                 inp = user_prompt
  
@@ -254,21 +272,24 @@ def main(args):
 
         print(f"[ OUT_PATH: {out_path} already exists ]")
         print(f"({os.path.join(args.preds_dir, out_path)}) => LENGTH: ", len(out_preds))
-        out_dir = os.path.join(args.preds_dir, args.dataset_name + "_outputs")
+        out_dir = os.path.join(args.preds_dir, dataset_txt + "_outputs")
         if not os.path.exists(out_dir):
             raise FileNotFoundError(f"{out_dir} does not exist!")
 
-        if args.dataset_name == "inaturalist":
+        if dataset_txt == "inaturalist":
             annot_path = "unified-inaturalist-test-combined.jsonl"
-        elif args.dataset_name == "fgvc_aircraft":
+            ans_prefix = "Specific Epithet:"
+        elif dataset_txt == "fgvc_aircraft":
             annot_path = "unified-fgvc-aircraft-test-combined.jsonl"
-        elif args.dataset_name == "stanford_dogs":
+            ans_prefix = "Specific Airplane:"
+        elif dataset_txt == "stanford_dogs":
             annot_path = "unified-stanford-dogs-test-combined.jsonl"
-        elif args.dataset_name == "cub_200_2011":
+            ans_prefix = "Specific Dog:"
+        elif dataset_txt == "cub_200_2011":
             annot_path = "unified-cub-200-test-combined.jsonl"
-        elif args.dataset_name == "nabirds":
+        elif dataset_txt == "nabirds":
             annot_path = "unified-nabirds-test-combined.jsonl"
-        elif args.dataset_name == "stanford_cars":
+        elif dataset_txt == "stanford_cars":
             annot_path = "unified-stanford-cars-test-combined.jsonl"
 
         # Loading the ground-truth labels for each dataset from 'annot_path
@@ -280,7 +301,7 @@ def main(args):
         total_em, total_f1 = [], []
         for pidx, pdict in enumerate(tqdm(out_preds, desc=f'Calculating EM for Knowledge Probe Outputs ({task_type})')):
             idx = int(pdict["idx"])
-            output_text = remove_ans_prefix(pdict["text"])  # Model-generated text
+            output_text = remove_ans_prefix(pdict["text"], prefix=ans_prefix)  # Model-generated text
 
             ems, f1s = [], []  # Considers maximum EM and F1 scores for fine-grained cases
             ground_truth_lbls = []

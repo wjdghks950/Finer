@@ -89,6 +89,9 @@ if __name__ == '__main__':
     parser.add_argument("--preds_dir", type=str, default="/shared/nas/data/m1/jk100/code/ecole/LLaVA/llava/preds")
     parser.add_argument("--model_name", type=str, required=True)
 
+    parser.add_argument("--use_prompt", action="store_true", default=False)
+    parser.add_argument("--prompt_type_id", type=int, default=None)
+
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--conv-mode", type=str, default=None)
     parser.add_argument("--temperature", type=float, default=0.2)
@@ -116,31 +119,40 @@ if __name__ == '__main__':
 
     # Loading the ground-truth labels for each dataset from 'annot_path
     ground_truths = annotation_loader(os.path.join(args.data_dir, annot_path))
-
+    
     task_types = ["high_coarse", "coarse", "fine"]
+    prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
 
-    # TODO: Erase use_prompt
-    # use_prompt = args.use_prompt
-    # prompt_types = ["cot_0shot", "cot_fewshot", "attr_seek"]
-    # prompt_type_id = args.prompt_type_id
+    # TODO: Implement use_prompt case
+    use_prompt = args.use_prompt
+    prompt_type_id = args.prompt_type_id
+
+    # TODO: task_name = f"{prompt_types[prompt_type_id]}_{task_types[task_type_id]}" if use_prompt else f"{task_types[task_type_id]}"
+    # TODO: out_path = f"{dataset_txt}_{task_name}_{model_name}_output.jsonl"
+
 
     # Paths to VLM-generated prediction outputs
     pred_dir = os.path.join(args.preds_dir, args.dataset_name + "_outputs")
     pred_paths = []
     for tidx, task_type in enumerate(task_types):
-        out_path = f"{args.dataset_name}_{task_type}_{args.model_name}_output.jsonl"
+        if prompt_type_id is None and not args.use_prompt:
+            out_path = f"{args.dataset_name}_{task_type}_{args.model_name}_output.jsonl"
+        else:
+            out_path = f"{args.dataset_name}_{prompt_types[prompt_type_id]}_{task_type}_{args.model_name}_output.jsonl"
+            task_types[tidx] = f"{prompt_types[prompt_type_id]}_{task_type}"
         pred_paths.append((tidx, out_path))
 
     pred_dict = {task_type: [] for task_type in task_types}
     for tidx, pred_path in pred_paths:
         task_type = task_types[tidx]
+        print(f"[ TASK_TYPE (idx: {tidx}) >> {task_type}]")
         try:
             with jsonlines.open(os.path.join(pred_dir, pred_path), "r") as reader:
                 pred_dict[task_type] = [line for line in reader]
                 print(f"({pred_path}) => LENGTH: ", len(pred_dict[task_type]))
         except FileNotFoundError as e:
             print(f"FileNotFoundError: {e}")
-            print(f"[ Skipping : {pred_path} ]")
+            print(f"[ Skipping : {pred_path} ...]\n")
             pred_dict[task_type] = [{"idx": 0, "text": ""}]
 
     score_dict = {task_type: {'em': [], 'f1': []} for task_type in task_types}
@@ -160,13 +172,13 @@ if __name__ == '__main__':
 
             ems, f1s = [], []  # Considers maximum EM and F1 scores for high_coarse and coarse cases
             ground_truth_lbls = []
-            if task_type == "high_coarse":
+            if "high_coarse" in task_type:
                 # For 'basic-level' case, if the models generate either one of the three granularity labels, consider them correct
                 ground_truth_lbls += [ground_truths[idx]["basic-level-lbl"]] + ground_truths[idx]["coarse-level-lbl"] + ground_truths[idx]["fine-level-lbl"]
-            elif task_type == "coarse":
+            elif "coarse" in task_type:
                 # For 'coarse-grained' case, if the models generate fine-level-lbl, consider them correct as well
                 ground_truth_lbls += ground_truths[idx]["coarse-level-lbl"] + ground_truths[idx]["fine-level-lbl"]
-            elif task_type == "fine":
+            elif  "fine" in task_type:
                 ground_truth_lbls += ground_truths[idx]["fine-level-lbl"]
 
             # print(f"[ ({idx}) GROUND_TRUTH vs. OUTPUT_TEXT: {ground_truth_lbls} || {normalize_answer(output_text)}")
@@ -175,8 +187,8 @@ if __name__ == '__main__':
                 temp_f1, temp_em = eval(output_text, lbl)
                 f1s.append(temp_f1)
                 ems.append(temp_em)
-            em = max(ems)
-            f1 = max(f1s)
+            em = max(ems) if len(ems) > 0 else 0.0
+            f1 = max(f1s) if len(f1s) > 0 else 0.0
             score_dict[task_type]['em'].append(em)
             score_dict[task_type]['f1'].append(f1)
 

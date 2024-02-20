@@ -38,6 +38,7 @@ def align_score(text, reference_text, scorer=None):
     scorer = AlignScore(model='roberta-base', batch_size=32, device='cuda:0', ckpt_path='/path/to/checkpoint', evaluation_mode='nli_sp')
     score = scorer.score(contexts=['hello world.'], claims=['hello world.'])
     '''
+    # TODO: Revise this to receive AlignScore from outside instead
     if scorer is None:
         scorer = AlignScore(model='roberta-large', 
                             batch_size=1, device='cuda:1', 
