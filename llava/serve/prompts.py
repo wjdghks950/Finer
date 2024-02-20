@@ -1,16 +1,16 @@
 # iNaturalist
-high_coarse = '''
+high_coarse_inaturalist = '''
 What is the name of the organism that appears in this image? \
 Provide your answer after "Answer:" from one of the following categories: ['Arachnids', 'Mammals', 'Reptiles', 'Animalia', 'Mollusks', 'Plants', 'Amphibians', 'Ray-finned Fishes', 'Birds', 'Insects', 'Fungi'].
 '''
 
-coarse = '''
+coarse_inaturalist = '''
 What is the name of the {concept_placeholder} that appears in this image? \
 For example, if it's a picture of a bengal tiger, give a coarse-grained label for the image 'Tiger'.
 Provide your answer after "Answer:".
 '''
 
-fine = '''
+fine_inaturalist = '''
 What is the name of the {concept_placeholder} that appears in this image? \
 For example, if it's a picture of a bengal tiger, give a fine-grained label for the image 'Bengal Tiger' or use its binomial nomenclature 'Panthera tigris tigris'.
 Provide your answer after "Answer:".
@@ -69,6 +69,23 @@ For example, if it's a picture of a Golden Retriever, give a coarse-grained labe
 Provide your answer after "Answer:".
 '''
 
+# Stanford Cars
+high_coarse_stanford_cars = '''
+What is the name of the object that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Airplane', 'Car', 'Train', 'Bicycle', 'Cell Phone', 'Plants', 'Dogs', 'Birds', 'Trucks'].
+'''
+ 
+coarse_stanford_cars = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+Provide your answer after "Answer:" from one of the following categories: ['Sedan', 'SUV', 'Coupe', 'Convertible', 'Pickup', 'Hatchback', 'Van']
+'''
+
+fine_stanford_cars = '''
+What is the name of the {concept_placeholder} that appears in this image? \
+For example, if it's a picture of a 2006 Honda Civic LX Coupe, give a fine-grained label for the image '2006 Honda Civic LX Coupe'.
+Provide your answer after "Answer:".
+'''
+
 # NAbirds
 high_coarse_nabirds = '''
 What is the name of the organism that appears in this image? \
@@ -89,18 +106,20 @@ Provide your answer after "Answer:".
 
 # Multi-turn dialogue for attribute extraction & concept classification
 attr_seek = '''
-What kind of physical attributes do you see in the {concept_placeholder}? \
+What kind of external descriptive attributes do you see from the {concept_placeholder} in this image? \
 Provide the set of detailed physical attributes after "Attributes:".
 '''
 
 attr_seek_coarse = '''
 Now, tell me what kind of {concept_placeholder} it is. \
+For example, if it's a picture of a bengal tiger, give a coarse-grained label for the image 'Tiger'.
 Provide your answer after "Answer:".
 '''
 
 attr_seek_fine = '''
 Now, tell me what kind of {concept_placeholder} it is. \
-Provide your answer after "Answer:" and make sure to follow the binomial nomenclature format (e.g., genus-species).
+For example, if it's a picture of a bengal tiger, give a fine-grained label for the image 'Bengal Tiger' or use its binomial nomenclature 'Panthera tigris tigris'.
+Provide your answer after "Answer:".
 '''
 
 cot_0shot_coarse = '''
@@ -156,7 +175,9 @@ Likely:
 - long tail
 - stout teeth
 
-In the required (Required:) set, do not include relative attributes like size or weight. \
+'Required' attributes are a set of external, physical attributes that allows a human to distinguish it from other similar looking concepts.
+'Likely' attributes are a set of attributes that may or may not be visible or are not one of the most discriminative features of the concept.
+In the required (Required:) set, do not include relative, non-visual attributes like size or weight, only the external, visually distinguishable attributes. \
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none". \
 '''
 
@@ -206,7 +227,9 @@ Likely:
 - long tail
 - stout teeth
 
-In the required (Required:) set, do not include relative attributes like size or weight. \
+'Required' attributes are a set of external, physical attributes that allows a human to distinguish it from other similar looking concepts.
+'Likely' attributes are a set of attributes that may or may not be visible or are not one of the most discriminative features of the concept.
+In the required (Required:) set, do not include relative, non-visual attributes like size or weight, only the external, visually distinguishable attributes. \
 Provide your response in the above format, saying nothing else. If there are no useful visual features, simply write "none".
 '''
 
@@ -223,13 +246,35 @@ Class: {class_placeholder}
 Order: {order_placeholder}
 Family: {family_placeholder}
 Genus: {genus_placeholder}
-Specific Epithet: 
+Specific Epithet:
+'''
+
+knowledge_probe_fgvc_aircraft = '''
+Can you guess the specific name (specific type) of an Airplane in the following taxonomic category given its physical attributes?
+Provide your answer after "Specific Airplane:".
+
+Physical Attributes: {attribute_placeholder}
+
+Supercategory: {supercategory_placeholder}
+Coarse-grained Category: {coarse_placeholder}
+Specific Airplane:
+'''
+
+knowledge_probe_stanford_dogs = '''
+Can you guess the specific name (specific type) of a Dog in the following taxonomic category given its physical attributes?
+Provide your answer after "Specific Dog:".
+
+Physical Attributes: {attribute_placeholder}
+
+Supercategory: {supercategory_placeholder}
+Coarse-grained Category: {coarse_placeholder}
+Specific Dog:
 '''
 
 PROMPT_DICT = {}
-PROMPT_DICT['high_coarse'] = high_coarse.strip()
-PROMPT_DICT['coarse'] = coarse.strip()
-PROMPT_DICT['fine'] = fine.strip()
+PROMPT_DICT['high_coarse_inaturalist'] = high_coarse_inaturalist.strip()
+PROMPT_DICT['coarse_inaturalist'] = coarse_inaturalist.strip()
+PROMPT_DICT['fine_inaturalist'] = fine_inaturalist.strip()
 
 PROMPT_DICT['high_coarse_fgvc_aircraft'] = high_coarse_fgvc_aircraft.strip()
 PROMPT_DICT['coarse_fgvc_aircraft'] = coarse_fgvc_aircraft.strip()
@@ -242,6 +287,10 @@ PROMPT_DICT['fine_cub_200_2011'] = fine_cub_200_2011.strip()
 PROMPT_DICT['high_coarse_stanford_dogs'] = high_coarse_stanford_dogs.strip()
 PROMPT_DICT['coarse_stanford_dogs'] = coarse_stanford_dogs.strip()
 PROMPT_DICT['fine_stanford_dogs'] = fine_stanford_dogs.strip()
+
+PROMPT_DICT['high_coarse_stanford_cars'] = high_coarse_stanford_cars.strip()
+PROMPT_DICT['coarse_stanford_cars'] = coarse_stanford_cars.strip()
+PROMPT_DICT['fine_stanford_cars'] = fine_stanford_cars.strip()
 
 PROMPT_DICT['high_coarse_nabirds'] = high_coarse_nabirds.strip()
 PROMPT_DICT['coarse_nabirds'] = coarse_nabirds.strip()
@@ -257,3 +306,5 @@ PROMPT_DICT['attr_gen_image'] = attr_gen_image.strip()
 PROMPT_DICT['attr_gen_wiki'] = attr_gen_wiki.strip()
 
 PROMPT_DICT['knowledge_probe_inaturalist'] = knowledge_probe_inaturalist.strip()
+PROMPT_DICT['knowledge_probe_fgvc_aircraft'] = knowledge_probe_fgvc_aircraft.strip()
+PROMPT_DICT['knowledge_probe_stanford_dogs'] = knowledge_probe_stanford_dogs.strip()

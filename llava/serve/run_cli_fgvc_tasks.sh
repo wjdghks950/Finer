@@ -2,13 +2,13 @@
 
 CTGR2IMG_PATH="ctgr2img_dict.json"
 
-echo "task_type_id [\"high_coarse: 0\", \"coarse: 1\", \"fine: 2\", \"attr_gen: 3\"] >> "
+echo "task_type_id [\"high_coarse: 0\", \"coarse: 1\", \"fine: 2\", \"attr_gen: 3\", \"Conversation Mode: 4\"] >> "
 read task_type_id
 
 echo "dataset name ['inaturalist', 'cub_200_2011', 'fgvc_aircraft', 'nabirds', 'stanford_dogs', 'stanford_cars'] >> "
 read dataset
 
-echo "model_name ['llava-7b', 'llava-13b', 'instructblip-7b', 'instructblip-13b', 'gpt-4']"
+echo "model_name ['llava-7b', 'llava-13b', 'llava-7b-regmix', 'llava-7b-attrfine' 'instructblip-7b', 'instructblip-13b', 'gpt-4']"
 read model_name
 
 if [ "$dataset" = "inaturalist" ]; then
@@ -29,22 +29,37 @@ elif [ "$dataset" = "stanford_cars" ]; then
 elif [ "$dataset" = "stanford_dogs" ]; then
 	dataset_name="stanford_dogs"
   DATA_PATH="unified-stanford-dogs-test-combined.jsonl"
+else
+    echo "Not a valid input; Terminating..."
 fi
+
 
 if [ "$model_name" = "llava-7b" ]; then
 	model_path="liuhaotian/llava-v1.5-7b"
+  model_base="null"
 elif [ "$model_name" = "llava-13b" ]; then
 	model_path="liuhaotian/llava-v1.5-13b"
+  model_base="null"
+elif [ "$model_name" = "llava-7b-regmix" ]; then
+	model_path="../../checkpoints/llava-v1.5-7b-lora-865k-inat2021-regmix/checkpoint-8000"
+  model_base="lmsys/vicuna-7b-v1.5"
+elif [ "$model_name" = "llava-7b-attrfine" ]; then
+	model_path="../../checkpoints/llava-v1.5-7b-lora-865k-inat2021-attr_gen_fine_answer"
+  model_base="lmsys/vicuna-7b-v1.5"
 elif [ "$model_name" = "instructblip-7b" ]; then
 	model_path="blip2_vicuna_instruct"
+  model_base="null"
 elif [ "$model_name" = "instructblip-13b" ]; then
 	model_path="blip2_vicuna_instruct"
+  model_base="null"
 elif [ "$model_name" = "gpt-4" ]; then
 	model_path="gpt-4-vision-preview"
   if [ "$task_type_id" = 3 ]; then
     echo "Use Wikipedia documents as input for attribute extraction? [y/n] >> "
     read use_wiki
   fi
+else
+    echo "Not a valid input; Terminating..."
 fi
 
 # Check if task_type_id is 0, 1, or 2
@@ -59,6 +74,7 @@ if [[ "$task_type_id" == "0" || "$task_type_id" == "1" || "$task_type_id" == "2"
     # Execute LLaVA
     python -m llava.serve.cli \
       --model-path $model_path \
+      --model-base $model_base \
       --data_dir /home/jk100/data/data/$dataset_name \
       --data_path $DATA_PATH \
       --image-file None \
@@ -70,6 +86,7 @@ if [[ "$task_type_id" == "0" || "$task_type_id" == "1" || "$task_type_id" == "2"
     prompt_type_id=0  # Set prompt_type_id to an empty string if use_prompt is not True
     python -m llava.serve.cli \
       --model-path $model_path \
+      --model-base $model_base \
       --data_dir /home/jk100/data/data/$dataset_name \
       --data_path $DATA_PATH \
       --image-file None \
@@ -93,6 +110,7 @@ elif [ "$task_type_id" = 3 ]; then
     read modality
 	  python -m llava.serve.cli \
           --model-path $model_path \
+          --model-base $model_base \
           --data_dir /home/jk100/data/data/$dataset_name \
           --data_path $DATA_PATH \
           --image-file None \
@@ -101,12 +119,11 @@ elif [ "$task_type_id" = 3 ]; then
           --modality $modality \
           --ctgr2img-path $CTGR2IMG_PATH \
           --max-new-tokens 256
-          # --parse_attr
           # --load-8bit
-          # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
   else
 	  python -m llava.serve.cli \
           --model-path $model_path \
+          --model-base $model_base \
           --data_dir /home/jk100/data/data/$dataset_name \
           --data_path $DATA_PATH \
           --image-file None \
@@ -115,8 +132,6 @@ elif [ "$task_type_id" = 3 ]; then
           --ctgr2img-path $CTGR2IMG_PATH \
           --max-new-tokens 256 \
           --use_wiki
-          # --parse_attr
           # --load-8bit
-          # TODO: Arbitrarily set `max-new-tokens` to 256 to avoid over-generation by llava-7b
   fi
 fi

@@ -37,7 +37,7 @@ def linearize_attr(concept_name, attr_list, include_concept_name=True):
     '''
     linear_attr_str = ""
     if len(attr_list) >= 1:
-        if include_concept_name:
+        if include_concept_name and len(concept_name) > 0:
             linear_attr_str = f"{concept_name} exhibits "
         else:
             linear_attr_str += ", ".join(attr_list)
