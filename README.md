@@ -29,13 +29,28 @@ cd Finer
 
 ## Dataset
 - First, set up a separate `data` directory in the same directory as the `LLaVA` and `LAVIS` dirs.
-- Under the `data` directory, set up the following directories separately
-    - `data/inaturalist` - Download the evaluation dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.json.tar.gz) and the training dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.json.tar.gz)
+- Download the datasets for each of the dataset from the following [link](https://drive.google.com/drive/folders/1s0-g9cWA3yUufe4jkEq-01SPko4DIASl?usp=drive_link) and structure them into the format below, where `...` indicates the downloaded dataset files including images and their annotations:
+```
+├── inaturalist
+│   └── ...
+├── fgvc-aircraft-2013b
+│   └── ...
+├── CUB_200_2011
+│   └── ...
+├── nabirds
+│   └── ...
+└── stanford_cars
+│   └── ...
+└── stanford_dogs
+│   └── ...
+```
+- If you'd like to set the datasets up yourself, under the `data` directory, set up the following directories separately
+    - `data/inaturalist` - Download the evaluation dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.json.tar.gz) and the training dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.json.tar.gz);
     - `data/fgvc-aircraft-2013b` - Download the dataset from the following link: [dataset link](https://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/archives/fgvc-aircraft-2013b.tar.gz)
     - `data/nabirds` - Download the dataset from the following link: [dataset link](https://dl.allaboutbirds.org/nabirds). You need to agree to the Terms of Use and get the downloadable link manually; follow the instructions in the nabirds dataset link.
     - `data/CUB_200_2011` - Download the dataset from the following link: [dataset link](https://data.caltech.edu/records/20098)
     - `data/stanford_dogs` - Download the dataset from the following link: [images](http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar) / [annotations](http://vision.stanford.edu/aditya86/ImageNetDogs/annotation.tar) / [train/test_split](http://vision.stanford.edu/aditya86/ImageNetDogs/lists.tar)
-    - `data/stanford_cars` - Download the dataset from the following Kaggle link: []
+    - `data/stanford_cars` - Download the dataset from the following Kaggle link: [dataset](https://www.kaggle.com/datasets/jessicali9530/stanford-cars-dataset)
 - In each of the dataset (e.g., `data/stanford_cars`) there is a concept to attribute dictionary of file format (`parsed-{dataset_name}-{model_name}-wiki-text-combined.json`) in the following format:
 ```json
     {
@@ -61,6 +76,15 @@ cd Finer
             ]
         }
     }
+```
+- For the superordinate, coarse-level and fine-level labels, within each `data/{dataset_name}` folder, there is a file name `unified-{dataset_name}-{split}-combined.jsonl`
+```json
+{
+    "idx": 278, 
+    "basic-level-lbl": "Airplane", 
+    "coarse-level-lbl": ["Boeing"], 
+    "fine-level-lbl": ["Boeing 737", "737-800"], 
+    "img_path": "{data_dir_path}/fgvc-aircraft-2013b/data/images/1935750.jpg", "metadata": {}}
 ```
 
 
