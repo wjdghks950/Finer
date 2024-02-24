@@ -54,6 +54,7 @@ elif [ "$model_name" = "instructblip-13b" ]; then
   model_base="null"
 elif [ "$model_name" = "gpt-4" ]; then
 	model_path="gpt-4-vision-preview"
+  model_base="null"
   if [ "$task_type_id" = 3 ]; then
     echo "Use Wikipedia documents as input for attribute extraction? [y/n] >> "
     read use_wiki
