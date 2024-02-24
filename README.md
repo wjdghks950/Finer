@@ -22,14 +22,55 @@ git clone https://github.com/wjdghks950/Finer.git
 cd Finer
 ```
 
-2. Install and setup the `llava` conda environment from the official [LLaVA repository](https://github.com/haotian-liu/LLaVA) to run LLaVA
+2. Install and setup the `llava` conda environment from the official [LLaVA repository](https://github.com/haotian-liu/LLaVA) to run LLaVA.
 
-3. Install and setup the `lavis` conda environment from the official [LAVIS repository](https://github.com/haotian-liu/LLaVA) for InstructBLIP and BLIP-2 set up
+3. Install and setup the `lavis` conda environment from the official [LAVIS repository](https://github.com/salesforce/LAVIS/tree/main/projects/instructblip) to run InstructBLIP and BLIP-2.
+
 
 ## Dataset
 - First, set up a separate `data` directory in the same directory as the `LLaVA` and `LAVIS` dirs.
 - Under the `data` directory, set up the following directories separately
-    - ddd
+    - `data/inaturalist` - Download the evaluation dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/val.json.tar.gz) and the training dataset [images](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.tar.gz) / [annotations](https://ml-inat-competition-datasets.s3.amazonaws.com/2021/train.json.tar.gz)
+    - `data/fgvc-aircraft-2013b` - Download the dataset from the following link: [dataset link](https://www.robots.ox.ac.uk/~vgg/data/fgvc-aircraft/archives/fgvc-aircraft-2013b.tar.gz)
+    - `data/nabirds` - Download the dataset from the following link: [dataset link](https://dl.allaboutbirds.org/nabirds). You need to agree to the Terms of Use and get the downloadable link manually; follow the instructions in the nabirds dataset link.
+    - `data/CUB_200_2011` - Download the dataset from the following link: [dataset link](https://data.caltech.edu/records/20098)
+    - `data/stanford_dogs` - Download the dataset from the following link: [images](http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar) / [annotations](http://vision.stanford.edu/aditya86/ImageNetDogs/annotation.tar) / [train/test_split](http://vision.stanford.edu/aditya86/ImageNetDogs/lists.tar)
+    - `data/stanford_cars` - Download the dataset from the following Kaggle link: []
+- In each of the dataset (e.g., `data/stanford_cars`) there is a concept to attribute dictionary of file format (`parsed-{dataset_name}-{model_name}-wiki-text-combined.json`) in the following format:
+```json
+    {
+        "id": 41,
+        "name": "Acura ZDX Hatchback 2012",
+        "attr_binomial": {
+            "required": [
+                "Five-door coupe-like hatchback body style",
+                "Unique, sloping roofline that tapers towards the rear",
+                "Shield-shaped front grille with the Acura logo",
+                "Angular headlight design with integrated daytime running lights",
+                "Distinctive, raised rear end with a high-mounted spoiler",
+                "Dual exhaust outlets at the rear",
+                "Sharp character lines along the sides"
+            ],
+            "likely": [
+                "LED taillights",
+                "19-inch alloy wheels",
+                "Panoramic glass roof",
+                "Chrome door handle accents",
+                "Body-colored side mirrors with integrated turn signals",
+                "Sculpted hood design"
+            ]
+        }
+    }
+```
+
+
+## Instruction-Tuning
+Fine-tune the LLaVA-v1.5 (7B) model using the finer-mixture (`LLaVA/playground/data/llava_v1_5_mix865k_attr_gen_fine_answer_inaturalist.json`), which was built on top of the llava instruction-tuning mixture, as follows:
+```bash
+cd LLaVA/scripts/v1_5
+./finetune_lora.sh
+```
+It took approximately ~28 hours to fine-tune the LLaVA-v1.5(7B) on the finer-mixture on 4 V100s (16G)
 
 
 ## Citation
