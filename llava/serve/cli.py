@@ -153,7 +153,7 @@ def main(args):
                         with jsonlines.open(cached_wiki_docs_path, "r") as cached_reader:
                             cached_wiki_attr_dicts = [d for d in cached_reader]
                     
-                    # TODO: If 'cached_wiki_attr_dicts' is not ready, you need to construct it with 'wiki_linearize_attr.py' - Integrate this part
+                    # If 'cached_wiki_attr_dicts' is not ready, you need to construct it with 'wiki_linearize_attr.py' - Integrate this part
                     assert len(cached_wiki_attr_dicts) > 0
 
                 ''' Load the dataset'''

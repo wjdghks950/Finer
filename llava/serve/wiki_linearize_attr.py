@@ -337,7 +337,7 @@ if __name__ == "__main__":
     wiki_attr_dicts = linearize_attr_wiki(concept_attr_dict, dataset_name, concept_wiki_path, out_dir=out_dir)
 
     exit()
-    if args.use_linearized_text:  # TODO: Fix this part so it incorporates other datasets as well
+    if args.use_linearized_text:  # TODO: Refactor this part so it incorporates other datasets as well - merge with calculate_score.py
         # Attributes extracted from Wikipedia using GPT-4 
         # (the resulting `linearized_text` is used as reference text for evaluation)
         ref_path = "parsed-gpt-4-wiki-text-queried-wiki-out.json"
