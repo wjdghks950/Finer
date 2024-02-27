@@ -1,7 +1,7 @@
 # Finer: A Benchmark for Enhancing Fine-Grained Visual Concept Recognition in Large Vision Language Models
 
 
-**Finer: Investigating and Enhancing Fine-Grained Visual Concept Recognition in Large Vision Language Models** [[Paper](https://arxiv.org/abs/2310.03744)] <br>
+**Finer: Investigating and Enhancing Fine-Grained Visual Concept Recognition in Large Vision Language Models** [[Paper](https://arxiv.org/abs/2402.16315)] <br>
 [Jeonghwan Kim](https://wjdghks950.github.io/), [Heng Ji](https://blender.cs.illinois.edu/hengji.html)
 
 ## Contents
