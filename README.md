@@ -105,7 +105,7 @@ If you find Finer useful for your research and applications, please cite using t
 @misc{kim2024finer,
       title={Finer: Investigating and Enhancing Fine-Grained Visual Concept Recognition in Large Vision Language Models}, 
       author={Kim, Jeonghwan and Ji, Heng},
-      publisher={arXiv:2310.03744},
+      publisher={arXiv:2402.16315},
       year={2024},
 }
 ```
